@@ -1,0 +1,69 @@
+name: ✨ Feature Request
+about: Suggest a new feature or enhancement
+labels:
+  - "Kind/Feature"
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this solve, or what's missing?
+      placeholder: I'm frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your ideal solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      placeholder: |
+        When I... [describe situation]
+        I want to... [describe action]
+        So that... [describe benefit]
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: Which part of the plugin does this touch?
+      options:
+        - label: Settings sync
+        - label: Admin lock/unlock/prefill
+        - label: Notifications
+        - label: Seerr webhook
+        - label: Advanced YAML config
+        - label: Not sure
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current Workaround
+      description: How are you handling this today, if at all?
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - "Critical: can't really use the plugin without it"
+        - "High: would be very useful"
+        - "Medium: nice to have"
+        - "Low: just an idea"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Screenshots, mockups, examples from other plugins, etc.
