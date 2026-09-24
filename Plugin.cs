@@ -25,15 +25,27 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     public IEnumerable<PluginPageInfo> GetPages()
     {
+        var ns = GetType().Namespace;
         return new[]
         {
             new PluginPageInfo
             {
-                Name = Name,
-                EmbeddedResourcePath = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}.Configuration.configPage.html",
-                    GetType().Namespace)
+                Name = "General",
+                DisplayName = "General",
+                EnableInMainMenu = true,
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.general.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Locked Settings",
+                DisplayName = "Locked Settings",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.lockedSettings.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Advanced",
+                DisplayName = "Advanced",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.advanced.html", ns)
             }
         };
     }

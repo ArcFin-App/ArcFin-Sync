@@ -1,0 +1,48 @@
+<div id="ArcfinSyncAdvancedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="ArcfinSyncAdvancedForm">
+                <div class="verticalSection">
+                    <h2>Arcfin Sync — Advanced</h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AdvancedYamlConfig">Advanced config (YAML)</label>
+                        <textarea is="emby-textarea" id="AdvancedYamlConfig" rows="16" style="font-family: monospace;"></textarea>
+                    </div>
+
+                    <br />
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d";
+
+            document.querySelector("#ArcfinSyncAdvancedPage")
+                .addEventListener("pageshow", function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        document.querySelector("#AdvancedYamlConfig").value = config.AdvancedYamlConfig || "";
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector("#ArcfinSyncAdvancedForm")
+                .addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.AdvancedYamlConfig = document.querySelector("#AdvancedYamlConfig").value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    return false;
+                });
+        })();
+    </script>
+</div>

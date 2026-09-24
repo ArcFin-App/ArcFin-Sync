@@ -1,0 +1,169 @@
+<div id="ArcfinSyncLockedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+    <div data-role="content">
+        <div class="content-primary">
+            <h2>Arcfin Sync — Locked Settings</h2>
+            <p class="fieldDescription">
+                Lock a setting key to stop users from changing it in the app, and optionally prefill a value for it. Key names come from the Arcfin app's settings screens — see the list below for reference.
+            </p>
+
+            <form id="ArcfinSyncLockedForm">
+                <table class="arcfinLockedTable">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Locked</th>
+                            <th>Prefill Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="LockedSettingsRows"></tbody>
+                </table>
+
+                <button type="button" is="emby-button" class="raised" id="AddLockedSettingRow">
+                    <span>Add Setting</span>
+                </button>
+
+                <datalist id="ArcfinKnownSettingKeys">
+                    <option value="videoQuality"></option>
+                    <option value="playbackEngine"></option>
+                    <option value="autoPlayNext"></option>
+                    <option value="skipIntro"></option>
+                    <option value="skipCredits"></option>
+                    <option value="skipRecap"></option>
+                    <option value="subtitleDefault"></option>
+                    <option value="trailersEnabled"></option>
+                    <option value="youtubeTrailersEnabled"></option>
+                    <option value="preferredAudioLanguage"></option>
+                    <option value="preferredSubtitleLanguage"></option>
+                    <option value="skipForwardSeconds"></option>
+                    <option value="skipBackwardSeconds"></option>
+                    <option value="wifiOnly"></option>
+                    <option value="downloadQuality"></option>
+                    <option value="offlineModeEnabled"></option>
+                    <option value="smartDownloadsEnabled"></option>
+                    <option value="smartDownloadsEpisodeCount"></option>
+                    <option value="smartDownloadsStorageBudgetGB"></option>
+                    <option value="reduceMotion"></option>
+                    <option value="hapticsEnabled"></option>
+                    <option value="mergeContinueWatchingAndUpNext"></option>
+                    <option value="heroVideoBackdropsEnabled"></option>
+                    <option value="notifyNewContent"></option>
+                    <option value="notifyDownload"></option>
+                    <option value="chapterListEnabled"></option>
+                    <option value="syncPlayEnabled"></option>
+                    <option value="castEnabled"></option>
+                    <option value="stillWatchingPromptEnabled"></option>
+                    <option value="matchContentFrameRate"></option>
+                    <option value="subtitleTextSize"></option>
+                    <option value="subtitleTextColor"></option>
+                    <option value="subtitleBackgroundStyle"></option>
+                    <option value="seerrDiscoverEnabled"></option>
+                    <option value="seerrURL"></option>
+                    <option value="seerrUsername"></option>
+                    <option value="seerrAuthMethod"></option>
+                    <option value="streamystatsURL"></option>
+                </datalist>
+
+                <br />
+                <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                    <span>Save</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .arcfinLockedTable { width: 100%; border-collapse: collapse; margin: 1em 0; }
+        .arcfinLockedTable th { text-align: left; font-size: 0.85em; opacity: 0.7; padding: 0.3em; }
+        .arcfinLockedTable td { padding: 0.3em; }
+        .arcfinLockedTable input[type="text"] { width: 100%; box-sizing: border-box; }
+    </style>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d";
+
+            function addLockedSettingRow(setting) {
+                setting = setting || { Key: "", IsLocked: false, PrefillValue: "" };
+                var row = document.createElement("tr");
+
+                var keyCell = document.createElement("td");
+                var keyInput = document.createElement("input");
+                keyInput.type = "text";
+                keyInput.className = "arcfinLockKey";
+                keyInput.setAttribute("list", "ArcfinKnownSettingKeys");
+                keyInput.value = setting.Key || "";
+                keyCell.appendChild(keyInput);
+
+                var lockedCell = document.createElement("td");
+                var lockedInput = document.createElement("input");
+                lockedInput.type = "checkbox";
+                lockedInput.className = "arcfinLockIsLocked";
+                lockedInput.checked = !!setting.IsLocked;
+                lockedCell.appendChild(lockedInput);
+
+                var valueCell = document.createElement("td");
+                var valueInput = document.createElement("input");
+                valueInput.type = "text";
+                valueInput.className = "arcfinLockPrefill";
+                valueInput.value = setting.PrefillValue || "";
+                valueCell.appendChild(valueInput);
+
+                var removeCell = document.createElement("td");
+                var removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.textContent = "Remove";
+                removeButton.addEventListener("click", function () { row.remove(); });
+                removeCell.appendChild(removeButton);
+
+                row.appendChild(keyCell);
+                row.appendChild(lockedCell);
+                row.appendChild(valueCell);
+                row.appendChild(removeCell);
+                document.querySelector("#LockedSettingsRows").appendChild(row);
+            }
+
+            function collectLockedSettings() {
+                var rows = document.querySelectorAll("#LockedSettingsRows tr");
+                var result = [];
+                rows.forEach(function (row) {
+                    var key = row.querySelector(".arcfinLockKey").value.trim();
+                    if (!key) { return; }
+                    result.push({
+                        Key: key,
+                        IsLocked: row.querySelector(".arcfinLockIsLocked").checked,
+                        PrefillValue: row.querySelector(".arcfinLockPrefill").value
+                    });
+                });
+                return result;
+            }
+
+            document.querySelector("#AddLockedSettingRow").addEventListener("click", function () {
+                addLockedSettingRow();
+            });
+
+            document.querySelector("#ArcfinSyncLockedPage")
+                .addEventListener("pageshow", function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        document.querySelector("#LockedSettingsRows").innerHTML = "";
+                        (config.LockedSettings || []).forEach(addLockedSettingRow);
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector("#ArcfinSyncLockedForm")
+                .addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.LockedSettings = collectLockedSettings();
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    return false;
+                });
+        })();
+    </script>
+</div>
