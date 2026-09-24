@@ -18,8 +18,8 @@ v0.1.0 in development. Not yet published to the Jellyfin plugin repository.
 
 ## Requirements
 
-- Jellyfin server 10.9+
-- .NET 8 SDK to build from source
+- Jellyfin server 12.1+
+- .NET 10 SDK to build from source
 
 ## Installing
 
@@ -37,7 +37,7 @@ Arcfin Sync will show up in Dashboard > Plugins > Catalog once a release is publ
 dotnet build
 ```
 
-Output goes to `bin/Debug/net8.0/Jellyfin.Plugin.ArcfinSync.dll`. Copy it into your Jellyfin server's plugin directory and restart the server to load it.
+Output goes to `bin/Debug/net10.0/Jellyfin.Plugin.ArcfinSync.dll`. Copy it into your Jellyfin server's plugin directory and restart the server to load it.
 
 ## Related
 
