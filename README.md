@@ -21,13 +21,23 @@ v0.1.0 in development. Not yet published to the Jellyfin plugin repository.
 - Jellyfin server 10.9+
 - .NET 8 SDK to build from source
 
-## Building
+## Installing
+
+Add this repository to Jellyfin: Dashboard > Plugins > Repositories > Add, then paste:
+
+```
+https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/manifest.json
+```
+
+Arcfin Sync will show up in Dashboard > Plugins > Catalog once a release is published.
+
+## Building from source
 
 ```
 dotnet build
 ```
 
-Output goes to `bin/Debug/net8.0/Arcfin.Sync.dll`. Copy it into your Jellyfin server's plugin directory and restart the server to load it.
+Output goes to `bin/Debug/net8.0/Jellyfin.Plugin.ArcfinSync.dll`. Copy it into your Jellyfin server's plugin directory and restart the server to load it.
 
 ## Related
 

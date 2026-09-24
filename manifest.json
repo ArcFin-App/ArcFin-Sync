@@ -1,0 +1,12 @@
+[
+  {
+    "guid": "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d",
+    "name": "Arcfin Sync",
+    "description": "Syncs Arcfin app settings across a user's devices, scoped by platform. Gives the admin lock, unlock, and prefill control per setting from the Jellyfin dashboard. Adds notifications for new media, admin announcements, and Seerr request availability.",
+    "overview": "Settings sync and notifications for Arcfin.",
+    "owner": "psmattas",
+    "category": "General",
+    "imageUrl": "",
+    "versions": []
+  }
+]
