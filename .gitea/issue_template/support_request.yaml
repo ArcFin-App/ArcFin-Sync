@@ -1,0 +1,50 @@
+name: ❓ Support Request
+about: Get help using Arcfin Sync
+labels:
+  - "Kind/Question"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before opening this:** check the [README](../../) and [existing issues](../../issues).
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What do you need help with?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What I've Tried
+      value: |
+        1.
+        2.
+
+  - type: input
+    id: server-version
+    attributes:
+      label: Jellyfin Server Version
+      placeholder: e.g. 10.9.11
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Arcfin Sync Version
+      placeholder: e.g. 0.1.0.0
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error Messages
+      render: shell
+
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions
+      value: |
+        1.
+        2.

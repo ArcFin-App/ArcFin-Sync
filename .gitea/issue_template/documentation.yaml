@@ -1,0 +1,32 @@
+name: 📚 Documentation
+about: Report missing, incorrect, or outdated documentation
+labels:
+  - "Kind/Documentation"
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Affected Page / File
+      placeholder: e.g. README.md, CONTRIBUTING.md
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Missing documentation
+        - Incorrect / outdated information
+        - Unclear or confusing
+        - Typo / formatting
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to change and why?
+    validations:
+      required: true
