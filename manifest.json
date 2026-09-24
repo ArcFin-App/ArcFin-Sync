@@ -7,6 +7,15 @@
     "owner": "psmattas",
     "category": "General",
     "imageUrl": "",
-    "versions": []
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Initial plugin skeleton. Loads in Jellyfin, has a dashboard config page. No settings sync or notification logic yet.",
+        "targetAbi": "10.9.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.1.0/arcfin-sync-0.1.0.0.zip",
+        "checksum": "c040cab30693bff21b72a4e52e427332",
+        "timestamp": "2026-09-24T03:35:00Z"
+      }
+    ]
   }
 ]
