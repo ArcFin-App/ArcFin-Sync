@@ -22,8 +22,17 @@
         (function () {
             var pluginId = "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d";
 
+            function arcfinSyncTabs() {
+                return [
+                    { href: "configurationpage?name=" + encodeURIComponent("General"), name: "General" },
+                    { href: "configurationpage?name=" + encodeURIComponent("Locked Settings"), name: "Locked Settings" },
+                    { href: "configurationpage?name=" + encodeURIComponent("Advanced"), name: "Advanced" }
+                ];
+            }
+
             document.querySelector("#ArcfinSyncAdvancedPage")
                 .addEventListener("pageshow", function () {
+                    LibraryMenu.setTabs("Advanced", 2, arcfinSyncTabs);
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                         document.querySelector("#AdvancedYamlConfig").value = config.AdvancedYamlConfig || "";
