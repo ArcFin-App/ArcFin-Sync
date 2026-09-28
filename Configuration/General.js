@@ -16,7 +16,6 @@ export default function (view) {
             document.querySelector("#NotificationsEnabled").checked = config.NotificationsEnabled;
             document.querySelector("#SeerrWebhookEnabled").checked = config.SeerrWebhookEnabled;
             document.querySelector("#SeerrWebhookSecret").value = config.SeerrWebhookSecret || "";
-            document.querySelector("#SeerrUsernameFollowsJellyfin").checked = config.SeerrUsernameFollowsJellyfin;
             Dashboard.hideLoadingMsg();
         });
 
@@ -30,7 +29,6 @@ export default function (view) {
                 config.NotificationsEnabled = document.querySelector("#NotificationsEnabled").checked;
                 config.SeerrWebhookEnabled = document.querySelector("#SeerrWebhookEnabled").checked;
                 config.SeerrWebhookSecret = document.querySelector("#SeerrWebhookSecret").value;
-                config.SeerrUsernameFollowsJellyfin = document.querySelector("#SeerrUsernameFollowsJellyfin").checked;
                 ApiClient.updatePluginConfiguration(ArcfinSyncPluginId, config).then(function (result) {
                     Dashboard.processPluginConfigurationUpdateResult(result);
                 });

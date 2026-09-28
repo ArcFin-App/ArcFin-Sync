@@ -57,9 +57,9 @@ var ARCFIN_SETTINGS_SCHEMA = [
 
     { section: "Integrations", key: "seerrDiscoverEnabled", label: "Show Discover on Home", type: "bool", default: "true" },
     { section: "Integrations", key: "seerrURL", label: "Seerr Server URL", type: "text", default: "" },
-    { section: "Integrations", key: "seerrUsername", label: "Seerr Username", type: "text", default: "" },
     { section: "Integrations", key: "seerrAuthMethod", label: "Seerr Account Type", type: "select", default: "jellyfin",
         options: [["jellyfin", "Jellyfin Account"], ["local", "Local Account"]] },
+    { section: "Integrations", type: "note", text: "There's no Seerr Username/Password row here on purpose. Lock Account Type to Jellyfin Account and every user's Seerr username is automatically their Jellyfin username, no admin input needed. Lock it to Local Account (or leave it unlocked) and each user enters their own separate Seerr username/password in the app instead. A password can never be set here either way — Arcfin only ever stores a user's Jellyfin access token, never their raw password." },
     { section: "Integrations", key: "streamystatsURL", label: "Streamystats Server URL", type: "text", default: "" }
 ];
 
@@ -85,6 +85,14 @@ function renderSections(container, existingByKey) {
             container.appendChild(heading);
             sectionDiv = document.createElement("div");
             container.appendChild(sectionDiv);
+        }
+
+        if (item.type === "note") {
+            var note = document.createElement("p");
+            note.className = "fieldDescription";
+            note.textContent = item.text;
+            sectionDiv.appendChild(note);
+            return;
         }
 
         var existing = existingByKey[item.key];
