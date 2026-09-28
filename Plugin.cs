@@ -37,15 +37,30 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             },
             new PluginPageInfo
             {
+                Name = "General.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.General.js", ns)
+            },
+            new PluginPageInfo
+            {
                 Name = "Locked Settings",
                 DisplayName = "Locked Settings",
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.lockedSettings.html", ns)
             },
             new PluginPageInfo
             {
+                Name = "LockedSettings.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.LockedSettings.js", ns)
+            },
+            new PluginPageInfo
+            {
                 Name = "Advanced",
                 DisplayName = "Advanced",
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.advanced.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Advanced.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.Advanced.js", ns)
             }
         };
     }

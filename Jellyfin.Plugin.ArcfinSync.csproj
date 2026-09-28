@@ -17,8 +17,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Configuration\general.html" />
+    <EmbeddedResource Include="Configuration\General.js" />
     <EmbeddedResource Include="Configuration\lockedSettings.html" />
+    <EmbeddedResource Include="Configuration\LockedSettings.js" />
     <EmbeddedResource Include="Configuration\advanced.html" />
+    <EmbeddedResource Include="Configuration\Advanced.js" />
   </ItemGroup>
 
 </Project>
