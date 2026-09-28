@@ -3,7 +3,7 @@ var ArcfinSyncPluginId = "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d";
 function arcfinSyncTabs() {
     return [
         { href: "configurationpage?name=" + encodeURIComponent("General"), name: "General" },
-        { href: "configurationpage?name=" + encodeURIComponent("Locked Settings"), name: "Locked Settings" },
+        { href: "configurationpage?name=" + encodeURIComponent("Client Settings"), name: "Client Settings" },
         { href: "configurationpage?name=" + encodeURIComponent("Advanced"), name: "Advanced" }
     ];
 }

@@ -26,6 +26,14 @@
                         <div class="fieldDescription">Set this same value in Seerr's webhook notification settings.</div>
                     </div>
 
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="SeerrUsernameFollowsJellyfin" />
+                            <span>Prefill Seerr username from Jellyfin username</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Only fills a genuinely blank Seerr username, never overrides one a user already set or one locked/prefilled below. Username only — a Seerr password can't be prefilled this way, Arcfin never stores a user's raw password, only their Jellyfin access token.</div>
+                    </div>
+
                     <br />
                     <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                         <span>Save</span>

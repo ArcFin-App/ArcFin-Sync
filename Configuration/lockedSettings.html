@@ -1,68 +1,13 @@
-<div id="ArcfinSyncLockedPage" data-role="page" class="page type-interior pluginConfigurationPage withTabs" data-controller="__plugin/LockedSettings.js" data-require="emby-input,emby-button,emby-checkbox">
+<div id="ArcfinSyncLockedPage" data-role="page" class="page type-interior pluginConfigurationPage withTabs" data-controller="__plugin/LockedSettings.js" data-require="emby-input,emby-button,emby-checkbox,emby-select">
     <div data-role="content">
         <div class="content-primary">
-            <h2>Arcfin Sync — Locked Settings</h2>
+            <h2>Arcfin Sync — Client Settings</h2>
             <p class="fieldDescription">
-                Lock a setting key to stop users from changing it in the app, and optionally prefill a value for it. Key names come from the Arcfin app's settings screens — see the list below for reference.
+                Mirrors the settings in the Arcfin app itself. Lock a setting to stop users from changing it, or leave it unlocked and just set a default value for anyone who hasn't set their own yet.
             </p>
 
             <form id="ArcfinSyncLockedForm">
-                <table class="arcfinLockedTable">
-                    <thead>
-                        <tr>
-                            <th>Key</th>
-                            <th>Locked</th>
-                            <th>Prefill Value</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="LockedSettingsRows"></tbody>
-                </table>
-
-                <button type="button" is="emby-button" class="raised" id="AddLockedSettingRow">
-                    <span>Add Setting</span>
-                </button>
-
-                <datalist id="ArcfinKnownSettingKeys">
-                    <option value="videoQuality"></option>
-                    <option value="playbackEngine"></option>
-                    <option value="autoPlayNext"></option>
-                    <option value="skipIntro"></option>
-                    <option value="skipCredits"></option>
-                    <option value="skipRecap"></option>
-                    <option value="subtitleDefault"></option>
-                    <option value="trailersEnabled"></option>
-                    <option value="youtubeTrailersEnabled"></option>
-                    <option value="preferredAudioLanguage"></option>
-                    <option value="preferredSubtitleLanguage"></option>
-                    <option value="skipForwardSeconds"></option>
-                    <option value="skipBackwardSeconds"></option>
-                    <option value="wifiOnly"></option>
-                    <option value="downloadQuality"></option>
-                    <option value="offlineModeEnabled"></option>
-                    <option value="smartDownloadsEnabled"></option>
-                    <option value="smartDownloadsEpisodeCount"></option>
-                    <option value="smartDownloadsStorageBudgetGB"></option>
-                    <option value="reduceMotion"></option>
-                    <option value="hapticsEnabled"></option>
-                    <option value="mergeContinueWatchingAndUpNext"></option>
-                    <option value="heroVideoBackdropsEnabled"></option>
-                    <option value="notifyNewContent"></option>
-                    <option value="notifyDownload"></option>
-                    <option value="chapterListEnabled"></option>
-                    <option value="syncPlayEnabled"></option>
-                    <option value="castEnabled"></option>
-                    <option value="stillWatchingPromptEnabled"></option>
-                    <option value="matchContentFrameRate"></option>
-                    <option value="subtitleTextSize"></option>
-                    <option value="subtitleTextColor"></option>
-                    <option value="subtitleBackgroundStyle"></option>
-                    <option value="seerrDiscoverEnabled"></option>
-                    <option value="seerrURL"></option>
-                    <option value="seerrUsername"></option>
-                    <option value="seerrAuthMethod"></option>
-                    <option value="streamystatsURL"></option>
-                </datalist>
+                <div id="ArcfinClientSettingsSections"></div>
 
                 <br />
                 <button is="emby-button" type="submit" class="raised button-submit block emby-button">
@@ -73,9 +18,12 @@
     </div>
 
     <style>
-        .arcfinLockedTable { width: 100%; border-collapse: collapse; margin: 1em 0; }
-        .arcfinLockedTable th { text-align: left; font-size: 0.85em; opacity: 0.7; padding: 0.3em; }
-        .arcfinLockedTable td { padding: 0.3em; }
-        .arcfinLockedTable input[type="text"] { width: 100%; box-sizing: border-box; }
+        .arcfinSettingRow { display: flex; align-items: center; gap: 1em; padding: 0.6em 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .arcfinSettingLabel { flex: 1 1 auto; min-width: 0; }
+        .arcfinSettingLabel .arcfinSettingKey { display: block; font-size: 0.75em; opacity: 0.5; font-family: monospace; }
+        .arcfinSettingControl { flex: 1 1 auto; min-width: 0; max-width: 16em; }
+        .arcfinSettingControl input[type="text"], .arcfinSettingControl input[type="number"], .arcfinSettingControl select { width: 100%; box-sizing: border-box; }
+        .arcfinSettingLock { flex: 0 0 auto; display: flex; align-items: center; gap: 0.4em; font-size: 0.85em; opacity: 0.85; }
+        .arcfinSectionHeading { margin-top: 1.6em; }
     </style>
 </div>

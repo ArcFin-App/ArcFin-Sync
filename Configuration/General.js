@@ -3,7 +3,7 @@ var ArcfinSyncPluginId = "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d";
 function arcfinSyncTabs() {
     return [
         { href: "configurationpage?name=" + encodeURIComponent("General"), name: "General" },
-        { href: "configurationpage?name=" + encodeURIComponent("Locked Settings"), name: "Locked Settings" },
+        { href: "configurationpage?name=" + encodeURIComponent("Client Settings"), name: "Client Settings" },
         { href: "configurationpage?name=" + encodeURIComponent("Advanced"), name: "Advanced" }
     ];
 }
@@ -16,6 +16,7 @@ export default function (view) {
             document.querySelector("#NotificationsEnabled").checked = config.NotificationsEnabled;
             document.querySelector("#SeerrWebhookEnabled").checked = config.SeerrWebhookEnabled;
             document.querySelector("#SeerrWebhookSecret").value = config.SeerrWebhookSecret || "";
+            document.querySelector("#SeerrUsernameFollowsJellyfin").checked = config.SeerrUsernameFollowsJellyfin;
             Dashboard.hideLoadingMsg();
         });
 
@@ -29,6 +30,7 @@ export default function (view) {
                 config.NotificationsEnabled = document.querySelector("#NotificationsEnabled").checked;
                 config.SeerrWebhookEnabled = document.querySelector("#SeerrWebhookEnabled").checked;
                 config.SeerrWebhookSecret = document.querySelector("#SeerrWebhookSecret").value;
+                config.SeerrUsernameFollowsJellyfin = document.querySelector("#SeerrUsernameFollowsJellyfin").checked;
                 ApiClient.updatePluginConfiguration(ArcfinSyncPluginId, config).then(function (result) {
                     Dashboard.processPluginConfigurationUpdateResult(result);
                 });

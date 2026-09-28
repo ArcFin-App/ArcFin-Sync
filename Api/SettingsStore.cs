@@ -10,7 +10,7 @@ public static class SettingsStore
 {
     private static readonly object FileLock = new();
 
-    public static List<SyncedSettingDto> GetMergedSettings(Guid userId)
+    public static List<SyncedSettingDto> GetMergedSettings(Guid userId, string? jellyfinUsername = null)
     {
         var userValues = LoadUserSettings(userId);
         var lockedSettings = Plugin.Instance!.Configuration.LockedSettings;
@@ -21,14 +21,19 @@ public static class SettingsStore
         foreach (var setting in lockedSettings)
         {
             seenKeys.Add(setting.Key);
-            result.Add(new SyncedSettingDto
+            var value = setting.IsLocked
+                ? setting.PrefillValue
+                : (userValues.TryGetValue(setting.Key, out var storedValue) ? storedValue : setting.PrefillValue);
+
+            // Lowest-priority fallback: only fills a genuinely blank seerrUsername, never
+            // overrides an admin lock/prefill or a value the user already chose themselves.
+            if (setting.Key == "seerrUsername" && !setting.IsLocked && string.IsNullOrEmpty(value)
+                && Plugin.Instance!.Configuration.SeerrUsernameFollowsJellyfin && !string.IsNullOrEmpty(jellyfinUsername))
             {
-                Key = setting.Key,
-                Value = setting.IsLocked
-                    ? setting.PrefillValue
-                    : (userValues.TryGetValue(setting.Key, out var storedValue) ? storedValue : setting.PrefillValue),
-                IsLocked = setting.IsLocked
-            });
+                value = jellyfinUsername;
+            }
+
+            result.Add(new SyncedSettingDto { Key = setting.Key, Value = value, IsLocked = setting.IsLocked });
         }
 
         foreach (var kvp in userValues)
@@ -44,6 +49,12 @@ public static class SettingsStore
                 Value = kvp.Value,
                 IsLocked = false
             });
+        }
+
+        if (!seenKeys.Contains("seerrUsername") && Plugin.Instance!.Configuration.SeerrUsernameFollowsJellyfin
+            && !string.IsNullOrEmpty(jellyfinUsername) && !userValues.ContainsKey("seerrUsername"))
+        {
+            result.Add(new SyncedSettingDto { Key = "seerrUsername", Value = jellyfinUsername, IsLocked = false });
         }
 
         return result;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +12,12 @@ namespace Jellyfin.Plugin.ArcfinSync.Api;
 public class ArcfinSyncController : ControllerBase
 {
     private readonly IAuthorizationContext _authContext;
+    private readonly IUserManager _userManager;
 
-    public ArcfinSyncController(IAuthorizationContext authContext)
+    public ArcfinSyncController(IAuthorizationContext authContext, IUserManager userManager)
     {
         _authContext = authContext;
+        _userManager = userManager;
     }
 
     [HttpGet("Status")]
@@ -38,7 +41,8 @@ public class ArcfinSyncController : ControllerBase
             return Unauthorized();
         }
 
-        return Ok(SettingsStore.GetMergedSettings(auth.UserId));
+        var username = _userManager.GetUserById(auth.UserId)?.Username;
+        return Ok(SettingsStore.GetMergedSettings(auth.UserId, username));
     }
 
     [HttpPut("Settings")]

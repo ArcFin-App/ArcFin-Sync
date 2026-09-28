@@ -42,8 +42,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             },
             new PluginPageInfo
             {
-                Name = "Locked Settings",
-                DisplayName = "Locked Settings",
+                Name = "Client Settings",
+                DisplayName = "Client Settings",
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.lockedSettings.html", ns)
             },
             new PluginPageInfo
