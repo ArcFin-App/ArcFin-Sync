@@ -1,6 +1,6 @@
 # Arcfin Sync
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
 A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/Arcfin-iOS). Installs on your Jellyfin server and syncs Arcfin app settings across a user's devices, gives the admin control over which settings can be changed, and adds notification support (new media, admin broadcasts, Seerr request availability) that Jellyfin doesn't have on its own.
@@ -14,7 +14,7 @@ A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/Arcfin-iOS
 
 ## Status
 
-v0.1.0 in development. Not yet published to the Jellyfin plugin repository.
+v0.2.0 in development. Installable via the repository manifest (manifest.json) once the release is published on Gitea.
 
 ## Requirements
 
