@@ -25,15 +25,42 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     public IEnumerable<PluginPageInfo> GetPages()
     {
+        var ns = GetType().Namespace;
         return new[]
         {
             new PluginPageInfo
             {
-                Name = Name,
-                EmbeddedResourcePath = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}.Configuration.configPage.html",
-                    GetType().Namespace)
+                Name = "General",
+                DisplayName = "General",
+                EnableInMainMenu = true,
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.general.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "General.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.General.js", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Client Settings",
+                DisplayName = "Client Settings",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.lockedSettings.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "LockedSettings.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.LockedSettings.js", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Advanced",
+                DisplayName = "Advanced",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.advanced.html", ns)
+            },
+            new PluginPageInfo
+            {
+                Name = "Advanced.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.Advanced.js", ns)
             }
         };
     }

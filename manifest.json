@@ -9,12 +9,12 @@
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/icon.png",
     "versions": [
       {
-        "version": "0.1.0.0",
-        "changelog": "Initial plugin skeleton. Loads in Jellyfin, has a dashboard config page. No settings sync or notification logic yet.",
-        "targetAbi": "10.9.0.0",
-        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.1.0/arcfin-sync-0.1.0.0.zip",
-        "checksum": "418187ece9b72a16f9fdcc2f6d4c1856",
-        "timestamp": "2026-09-24T04:05:00Z"
+        "version": "0.2.0.0",
+        "changelog": "Fixed the plugin targeting the wrong Jellyfin ABI (was 10.9.0.0/net8.0, now 12.1.0.0/net10.0), which caused a Malfunctioned status on real servers. Removed an unnecessary FrameworkReference the plugin loader rejects. Replaced the free-form Locked Settings table with a real Client Settings editor mirroring the app's own Settings hierarchy. seerrUsername is now derived from Seerr Account Type's lock state instead of being independently lockable. Switched dashboard tab navigation to Jellyfin's real multi-page mechanism.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.2.0/arcfin-sync-0.2.0.0.zip",
+        "checksum": "eb2b41f09896773bd3bb0b1a0eb6ac58",
+        "timestamp": "2026-09-29T21:00:00Z"
       }
     ]
   }

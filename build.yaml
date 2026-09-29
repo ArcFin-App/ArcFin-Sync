@@ -1,8 +1,8 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.1.0.0"
-targetAbi: "10.9.0.0"
-framework: "net8.0"
+version: "0.2.0.0"
+targetAbi: "12.1.0.0"
+framework: "net10.0"
 owner: "psmattas"
 overview: "Syncs Arcfin app settings across devices and adds notification support to Jellyfin."
 description: "Syncs Arcfin app settings across a user's devices, scoped by platform. Gives the admin lock, unlock, and prefill control per setting from the Jellyfin dashboard. Adds notifications for new media, admin announcements, and Seerr request availability."
@@ -10,4 +10,15 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Initial plugin skeleton.
+  - Fixed the plugin targeting the wrong Jellyfin ABI (was 10.9.0.0/net8.0, now
+    12.1.0.0/net10.0), which caused a Malfunctioned status on real servers.
+  - Removed an unnecessary FrameworkReference to Microsoft.AspNetCore.App that
+    embedded a shared-framework requirement the plugin loader rejects.
+  - Replaced the free-form Locked Settings table with a real Client Settings
+    editor mirroring the app's own Settings hierarchy, typed per-section
+    controls, and a lock toggle per setting.
+  - seerrUsername is now derived from Seerr Account Type's lock state instead
+    of being independently lockable, since one shared username can't apply to
+    every user.
+  - Switched the dashboard's tab navigation to Jellyfin's real multi-page
+    ES-module mechanism instead of hand-rolled JS tabs.

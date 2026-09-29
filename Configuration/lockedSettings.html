@@ -1,0 +1,29 @@
+<div id="ArcfinSyncLockedPage" data-role="page" class="page type-interior pluginConfigurationPage withTabs" data-controller="__plugin/LockedSettings.js" data-require="emby-input,emby-button,emby-checkbox,emby-select">
+    <div data-role="content">
+        <div class="content-primary">
+            <h2>Arcfin Sync — Client Settings</h2>
+            <p class="fieldDescription">
+                Mirrors the settings in the Arcfin app itself. Lock a setting to stop users from changing it, or leave it unlocked and just set a default value for anyone who hasn't set their own yet.
+            </p>
+
+            <form id="ArcfinSyncLockedForm">
+                <div id="ArcfinClientSettingsSections"></div>
+
+                <br />
+                <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                    <span>Save</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .arcfinSettingRow { display: flex; align-items: center; gap: 1em; padding: 0.6em 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .arcfinSettingLabel { flex: 1 1 auto; min-width: 0; }
+        .arcfinSettingLabel .arcfinSettingKey { display: block; font-size: 0.75em; opacity: 0.5; font-family: monospace; }
+        .arcfinSettingControl { flex: 1 1 auto; min-width: 0; max-width: 16em; }
+        .arcfinSettingControl input[type="text"], .arcfinSettingControl input[type="number"], .arcfinSettingControl select { width: 100%; box-sizing: border-box; }
+        .arcfinSettingLock { flex: 0 0 auto; display: flex; align-items: center; gap: 0.4em; font-size: 0.85em; opacity: 0.85; }
+        .arcfinSectionHeading { margin-top: 1.6em; }
+    </style>
+</div>
