@@ -9,6 +9,14 @@
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/icon.png",
     "versions": [
       {
+        "version": "0.3.0.0",
+        "changelog": "Added GET /ArcfinSync/Encoders: which video encoders (H.264, HEVC, AV1) work with the server's hardware acceleration setting, from a one-frame test encode per codec with the server's own ffmpeg and device. Kept until the encoding settings change; ?refresh=true tests again. Arcfin uses it to ask for AV1 only where the card can encode it.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.3.0/arcfin-sync-0.3.0.0.zip",
+        "checksum": "1a5485fd895aab25c4f97a1892ad8276",
+        "timestamp": "2026-11-13T13:20:00Z"
+      },
+      {
         "version": "0.2.0.0",
         "changelog": "Fixed the plugin targeting the wrong Jellyfin ABI (was 10.9.0.0/net8.0, now 12.1.0.0/net10.0), which caused a Malfunctioned status on real servers. Removed an unnecessary FrameworkReference the plugin loader rejects. Replaced the free-form Locked Settings table with a real Client Settings editor mirroring the app's own Settings hierarchy. seerrUsername is now derived from Seerr Account Type's lock state instead of being independently lockable. Switched dashboard tab navigation to Jellyfin's real multi-page mechanism.",
         "targetAbi": "12.1.0.0",
