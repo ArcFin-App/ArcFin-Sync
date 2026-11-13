@@ -1,6 +1,6 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.2.0.0"
+version: "0.3.0.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
@@ -10,15 +10,8 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Fixed the plugin targeting the wrong Jellyfin ABI (was 10.9.0.0/net8.0, now
-    12.1.0.0/net10.0), which caused a Malfunctioned status on real servers.
-  - Removed an unnecessary FrameworkReference to Microsoft.AspNetCore.App that
-    embedded a shared-framework requirement the plugin loader rejects.
-  - Replaced the free-form Locked Settings table with a real Client Settings
-    editor mirroring the app's own Settings hierarchy, typed per-section
-    controls, and a lock toggle per setting.
-  - seerrUsername is now derived from Seerr Account Type's lock state instead
-    of being independently lockable, since one shared username can't apply to
-    every user.
-  - Switched the dashboard's tab navigation to Jellyfin's real multi-page
-    ES-module mechanism instead of hand-rolled JS tabs.
+  - Added GET /ArcfinSync/Encoders: which video encoders (h264, hevc, av1) work with
+    the server's hardware acceleration setting, from a one-frame test encode per codec
+    with the server's own ffmpeg and device. Kept until the setting changes;
+    ?refresh=true tests again. Arcfin uses it to ask for AV1 only where the card
+    can encode it (a Pascal card, for one, has an AV1 encoder in ffmpeg but can't).

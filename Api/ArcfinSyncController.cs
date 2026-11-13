@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.ArcfinSync.Api;
 
@@ -13,11 +16,30 @@ public class ArcfinSyncController : ControllerBase
 {
     private readonly IAuthorizationContext _authContext;
     private readonly IUserManager _userManager;
+    private readonly IMediaEncoder _mediaEncoder;
+    private readonly IConfigurationManager _config;
+    private readonly ILogger<ArcfinSyncController> _logger;
 
-    public ArcfinSyncController(IAuthorizationContext authContext, IUserManager userManager)
+    public ArcfinSyncController(IAuthorizationContext authContext, IUserManager userManager, IMediaEncoder mediaEncoder,
+                                IConfigurationManager config, ILogger<ArcfinSyncController> logger)
     {
         _authContext = authContext;
         _userManager = userManager;
+        _mediaEncoder = mediaEncoder;
+        _config = config;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Which video encoders work with the server's hardware acceleration, from a one-frame test
+    /// encode per codec, so Arcfin only asks for a conversion the server can make.
+    /// <c>refresh</c> runs the tests again; otherwise they're kept until the setting changes.
+    /// </summary>
+    [HttpGet("Encoders")]
+    [Authorize]
+    public async Task<ActionResult<EncodersDto>> GetEncoders([FromQuery] bool refresh = false)
+    {
+        return await EncoderProbe.GetAsync(_mediaEncoder, _config, _logger, refresh).ConfigureAwait(false);
     }
 
     [HttpGet("Status")]
