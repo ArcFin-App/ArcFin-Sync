@@ -28,7 +28,7 @@ var ARCFIN_SETTINGS_SCHEMA = [
 
     { section: "Downloads", key: "wifiOnly", label: "Wi-Fi Only", type: "bool", default: "true" },
     { section: "Downloads", key: "downloadQuality", label: "Download Quality", type: "select", default: "Max",
-        options: [["Max", "Max Quality"], ["4K", "4K Ultra HD"], ["1080p", "1080p HD"], ["720p", "720p"], ["480p", "480p"]] },
+        options: [["Max", "Original"], ["high", "High"], ["balanced", "Balanced"], ["spaceSaver", "Space Saver"]] },
     { section: "Downloads", key: "offlineModeEnabled", label: "Offline Mode", type: "bool", default: "false" },
     { section: "Downloads", key: "smartDownloadsEnabled", label: "Smart Downloads", type: "bool", default: "false" },
     { section: "Downloads", key: "smartDownloadsEpisodeCount", label: "Episodes to Keep", type: "number", default: "2" },
