@@ -26,7 +26,7 @@ v0.2.0 in development. Installable via the repository manifest (manifest.json) o
 Add this repository to Jellyfin: Dashboard > Plugins > Repositories > Add, then paste:
 
 ```
-https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/manifest.json
+https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/manifest.json
 ```
 
 Arcfin Sync will show up in Dashboard > Plugins > Catalog once a release is published.

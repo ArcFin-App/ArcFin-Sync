@@ -6,7 +6,7 @@
     "overview": "Settings sync and notifications for Arcfin.",
     "owner": "psmattas",
     "category": "General",
-    "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/icon.png",
+    "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/icon.png",
     "versions": [
       {
         "version": "0.3.0.0",
