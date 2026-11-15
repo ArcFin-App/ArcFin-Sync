@@ -9,6 +9,14 @@
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/raw/branch/main/icon.png",
     "versions": [
       {
+        "version": "0.3.1.0",
+        "changelog": "Added GET /ArcfinSync/Items/{itemId}/Audio/{streamIndex}: copies one audio track out with the server's ffmpeg as AAC in an .m4a, so Arcfin can keep several audio tracks in a converted download (Jellyfin's conversion keeps only one). Client Settings: Download Quality now offers Arcfin's four download choices.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.3.1/arcfin-sync-0.3.1.0.zip",
+        "checksum": "996eb03a81c6834eacf75143cfdc023a",
+        "timestamp": "2026-11-15T23:00:00Z"
+      },
+      {
         "version": "0.3.0.0",
         "changelog": "Added GET /ArcfinSync/Encoders: which video encoders (H.264, HEVC, AV1) work with the server's hardware acceleration setting, from a one-frame test encode per codec with the server's own ffmpeg and device. Kept until the encoding settings change; ?refresh=true tests again. Arcfin uses it to ask for AV1 only where the card can encode it.",
         "targetAbi": "12.1.0.0",
