@@ -1,6 +1,6 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.3.0.0"
+version: "0.3.1.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
