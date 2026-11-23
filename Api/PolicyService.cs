@@ -42,16 +42,6 @@ public static class PolicyService
         }
     }
 
-    public static void UpdateConfig(Action<PluginConfiguration> change)
-    {
-        lock (ConfigLock)
-        {
-            var plugin = Plugin.Instance!;
-            change(plugin.Configuration);
-            plugin.SaveConfiguration();
-        }
-    }
-
     /// <summary>
     /// Checks an admin's policy and normalises it: schema keys only, values of the right type, no
     /// duplicates, known users. An empty bool/int/double default counts as no default. seerrUsername is dropped: it's

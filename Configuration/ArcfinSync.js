@@ -6,7 +6,6 @@ var STATE = {
     policy: null,
     saved: null,
     users: [],
-    config: null,
     status: null,
     dirty: false
 };
@@ -533,29 +532,6 @@ function renderUsers(view) {
     });
 }
 
-// ----- Notifications & Advanced -----
-
-function renderConfig(view) {
-    var c = STATE.config;
-    view.querySelector("#afNotificationsEnabled").checked = c.NotificationsEnabled;
-    view.querySelector("#afSeerrWebhookEnabled").checked = c.SeerrWebhookEnabled;
-    view.querySelector("#afSeerrWebhookSecret").value = "";
-    view.querySelector("#afSecretState").textContent = c.SeerrWebhookSecretSet
-        ? "A secret is set. It's never shown again; type a new one to replace it. Set the same value in Seerr's webhook notification settings."
-        : "No secret set. Set one here and the same value in Seerr's webhook notification settings.";
-    view.querySelector("#afClearSecret").hidden = !c.SeerrWebhookSecretSet;
-    view.querySelector("#afAdvancedYaml").value = c.AdvancedYamlConfig || "";
-}
-
-function saveConfig(view, body) {
-    Dashboard.showLoadingMsg();
-    return send("PUT", "Admin/Config", body).then(function (config) {
-        STATE.config = config;
-        renderConfig(view);
-        Dashboard.hideLoadingMsg();
-        Dashboard.processPluginConfigurationUpdateResult();
-    }, showError);
-}
 
 // ----- Page -----
 
@@ -563,7 +539,6 @@ function renderAll(view) {
     renderOverview(view);
     renderSettings(view);
     renderUsers(view);
-    renderConfig(view);
 }
 
 function selectTab(view, name) {
@@ -579,7 +554,7 @@ function selectTab(view, name) {
 function reload(view, keepTab) {
     Dashboard.showLoadingMsg();
     return Promise.all([
-        getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Admin/Config"), getJson("Status")
+        getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status")
     ]).then(function (results) {
         STATE.schema = results[0];
         // Unsaved policy edits survive a refresh of the user list.
@@ -588,8 +563,7 @@ function reload(view, keepTab) {
             STATE.saved = clone(results[1]);
         }
         STATE.users = results[2];
-        STATE.config = results[3];
-        STATE.status = results[4];
+        STATE.status = results[3];
         renderAll(view);
         markDirty();
         if (keepTab) { selectTab(view, keepTab); }
@@ -616,25 +590,6 @@ function wire(view) {
         markDirty();
         renderAll(view);
     });
-    view.querySelector("#afNotificationsForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-        var secret = view.querySelector("#afSeerrWebhookSecret").value;
-        saveConfig(view, {
-            NotificationsEnabled: view.querySelector("#afNotificationsEnabled").checked,
-            SeerrWebhookEnabled: view.querySelector("#afSeerrWebhookEnabled").checked,
-            SeerrWebhookSecret: secret ? secret : null
-        });
-        return false;
-    });
-    view.querySelector("#afClearSecret").addEventListener("click", function () {
-        if (!window.confirm("Remove the Seerr webhook secret?")) { return; }
-        saveConfig(view, { SeerrWebhookSecret: "" });
-    });
-    view.querySelector("#afAdvancedForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-        saveConfig(view, { AdvancedYamlConfig: view.querySelector("#afAdvancedYaml").value });
-        return false;
-    });
 }
 
 export default function (view) {
@@ -646,6 +601,7 @@ export default function (view) {
         }
         var tab = "overview";
         try { tab = sessionStorage.getItem("arcfinSyncTab") || "overview"; } catch (e) { /* private mode */ }
+        if (!view.querySelector('.afTab[data-tab="' + tab + '"]')) { tab = "overview"; }
         selectTab(view, tab);
         STATE.dirty = false;
         STATE.policy = null;

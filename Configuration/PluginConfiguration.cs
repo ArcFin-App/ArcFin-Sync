@@ -4,14 +4,12 @@ using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.ArcfinSync.Configuration;
 
+/// <summary>
+/// 0.3.x also had notification, Seerr webhook and YAML fields that nothing used. They're gone;
+/// the XML serializer skips them when it reads an older file.
+/// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
-    public bool NotificationsEnabled { get; set; } = true;
-
-    public bool SeerrWebhookEnabled { get; set; } = true;
-
-    public string SeerrWebhookSecret { get; set; } = string.Empty;
-
     /// <summary>
     /// The 0.3 form of the global policy. Still written, derived from <see cref="Policy"/>, so a
     /// server that goes back to 0.3.x keeps its locks and defaults.
@@ -23,8 +21,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// from 0.3.x, which builds it from <see cref="LockedSettings"/>.
     /// </summary>
     public SettingsPolicy? Policy { get; set; }
-
-    public string AdvancedYamlConfig { get; set; } = string.Empty;
 }
 
 public class LockedSetting

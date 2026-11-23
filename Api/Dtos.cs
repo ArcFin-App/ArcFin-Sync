@@ -126,26 +126,3 @@ public class AdminUserDto
 
     public Dictionary<string, string?> Settings { get; set; } = new();
 }
-
-public class AdminConfigDto
-{
-    public bool NotificationsEnabled { get; set; }
-
-    public bool SeerrWebhookEnabled { get; set; }
-
-    public bool SeerrWebhookSecretSet { get; set; }
-
-    public string AdvancedYamlConfig { get; set; } = string.Empty;
-}
-
-public class AdminConfigBody
-{
-    public bool? NotificationsEnabled { get; set; }
-
-    public bool? SeerrWebhookEnabled { get; set; }
-
-    /// <summary>Write-only. Null keeps the current secret; an empty string clears it.</summary>
-    public string? SeerrWebhookSecret { get; set; }
-
-    public string? AdvancedYamlConfig { get; set; }
-}

@@ -17,9 +17,6 @@ namespace Jellyfin.Plugin.ArcfinSync.Api;
 [Authorize(Policy = Policies.RequiresElevation)]
 public class ArcfinSyncAdminController : ControllerBase
 {
-    private const int MaxSecretLength = 512;
-    private const int MaxYamlLength = 256 * 1024;
-
     private readonly IUserManager _userManager;
 
     public ArcfinSyncAdminController(IUserManager userManager)
@@ -62,59 +59,6 @@ public class ArcfinSyncAdminController : ControllerBase
                 Settings = store.LoadSyncedValues(u.Id, SettingsSchema.Embedded)
             })
             .ToList();
-    }
-
-    [HttpGet("Config")]
-    public ActionResult<AdminConfigDto> GetConfig()
-    {
-        var config = Plugin.Instance!.Configuration;
-        return new AdminConfigDto
-        {
-            NotificationsEnabled = config.NotificationsEnabled,
-            SeerrWebhookEnabled = config.SeerrWebhookEnabled,
-            SeerrWebhookSecretSet = !string.IsNullOrEmpty(config.SeerrWebhookSecret),
-            AdvancedYamlConfig = config.AdvancedYamlConfig ?? string.Empty
-        };
-    }
-
-    [HttpPut("Config")]
-    [RequestSizeLimit(1024 * 1024)]
-    public ActionResult<AdminConfigDto> PutConfig([FromBody] AdminConfigBody body)
-    {
-        if (body is null)
-        {
-            return BadRequest("No configuration.");
-        }
-
-        if (body.SeerrWebhookSecret is { } secret && (secret.Length > MaxSecretLength || secret.Any(char.IsControl)))
-        {
-            return BadRequest($"The webhook secret must be plain text of at most {MaxSecretLength} characters.");
-        }
-
-        if (body.AdvancedYamlConfig is { Length: > MaxYamlLength })
-        {
-            return BadRequest("The advanced configuration is too long.");
-        }
-
-        // The configuration is saved as XML, which can't hold most control characters.
-        if (body.AdvancedYamlConfig is { } yaml && yaml.Any(c => char.IsControl(c) && c is not ('\t' or '\n' or '\r')))
-        {
-            return BadRequest("The advanced configuration can't contain control characters.");
-        }
-
-        PolicyService.UpdateConfig(config =>
-        {
-            config.NotificationsEnabled = body.NotificationsEnabled ?? config.NotificationsEnabled;
-            config.SeerrWebhookEnabled = body.SeerrWebhookEnabled ?? config.SeerrWebhookEnabled;
-            if (body.SeerrWebhookSecret is not null)
-            {
-                config.SeerrWebhookSecret = body.SeerrWebhookSecret.Trim();
-            }
-
-            config.AdvancedYamlConfig = body.AdvancedYamlConfig ?? config.AdvancedYamlConfig;
-        });
-
-        return GetConfig();
     }
 
     [HttpPut("Users/{userId}/Devices/{deviceId}/Name")]
