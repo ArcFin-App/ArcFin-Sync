@@ -63,8 +63,41 @@ public sealed class SettingsSchema
             // An int with fixed choices only takes one of them.
             "int" => long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _)
                      && (setting.Options is not { Count: > 0 } || setting.Options.Any(o => o.Value == value)),
-            _ => true
+            "double" => IsValidDouble(setting, value),
+            _ => setting.Format != "json" || IsJsonContainer(value)
         };
+    }
+
+    /// <summary>A decimal with '.', finite, within min/max, and one of the choices when there are any.</summary>
+    private static bool IsValidDouble(SchemaSetting setting, string value)
+    {
+        if (!double.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                             CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
+        {
+            return false;
+        }
+
+        if ((setting.Min is { } min && number < min) || (setting.Max is { } max && number > max))
+        {
+            return false;
+        }
+
+        return setting.Options is not { Count: > 0 }
+               || setting.Options.Any(o => double.TryParse(o.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var choice) && choice == number);
+    }
+
+    /// <summary>A JSON array or object, the only shapes the app stores as a JSON string.</summary>
+    private static bool IsJsonContainer(string value)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(value);
+            return document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static SettingsSchema LoadEmbedded()
@@ -120,6 +153,16 @@ public sealed class SchemaSetting
 
     [JsonPropertyName("options")]
     public List<SchemaOption>? Options { get; set; }
+
+    [JsonPropertyName("min")]
+    public double? Min { get; set; }
+
+    [JsonPropertyName("max")]
+    public double? Max { get; set; }
+
+    /// <summary>"json" for a string holding a JSON array or object.</summary>
+    [JsonPropertyName("format")]
+    public string? Format { get; set; }
 
     /// <summary>Where the app shows the setting; empty means everywhere.</summary>
     [JsonPropertyName("platforms")]

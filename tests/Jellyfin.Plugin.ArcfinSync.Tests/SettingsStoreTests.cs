@@ -47,6 +47,20 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void LoadingRemovesKeysTheSchemaDoesNotList()
+    {
+        var user = Guid.NewGuid();
+        Directory.CreateDirectory(Path.Combine(_root, "users"));
+        var file = Path.Combine(_root, "users", $"{user}.json");
+        File.WriteAllText(file, """{"skipIntro":"true","offlineModeEnabled":"true","streamystatsURL":"http://x"}""");
+
+        var values = new SettingsStore(_root).LoadSyncedValues(user, SettingsSchema.Embedded);
+
+        Assert.Equal(new[] { "skipIntro" }, values.Keys);
+        Assert.Equal("""{"skipIntro":"true"}""", File.ReadAllText(file));
+    }
+
+    [Fact]
     public void RefusesTheEmptyUser()
     {
         Assert.Throws<ArgumentException>(() => new SettingsStore(_root).LoadValues(Guid.Empty));

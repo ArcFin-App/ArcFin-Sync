@@ -122,14 +122,12 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        return Ok(SettingsRules.LegacyMerge(rules, SettingsStore.Current.LoadValues(user.Id), user.Username));
+        return Ok(SettingsRules.LegacyMerge(rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded), user.Username));
     }
 
     /// <summary>
-    /// The 0.3.x save. Keys the schema doesn't know are still stored as 0.3.x did: released apps
-    /// sync offlineModeEnabled, which the schema leaves out, and dropping it while GET Settings
-    /// still returns the stored value would keep putting the old value back on those apps.
-    /// Device-only keys and values of the wrong type are dropped rather than refused.
+    /// The 0.3.x save. Only synced Arcfin settings of the right type are kept; others are dropped
+    /// rather than refused, so an app a version ahead or behind still syncs the rest.
     /// </summary>
     [HttpPut("Settings")]
     [Authorize]
@@ -149,7 +147,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        var values2 = SaveSynced(auth!, user, rules, values, replace: false, keepUnknown: true);
+        var values2 = SaveSynced(auth!, user, rules, values, replace: false);
 
         // 0.3.x answered a save without the Jellyfin username, so a forced seerrUsername comes
         // back with no value here; kept as it was for the apps that read this.
@@ -174,7 +172,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        return SyncState(user, rules, SettingsStore.Current.LoadValues(user.Id));
+        return SyncState(user, rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded));
     }
 
     /// <summary>
@@ -201,7 +199,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false, keepUnknown: false);
+        var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false);
         return SyncState(user, rules, values);
     }
 
@@ -400,14 +398,19 @@ public class ArcfinSyncController : ControllerBase
 
     /// <summary>Saves synced values, stamping who changed them when something actually changed.</summary>
     private static Dictionary<string, string?> SaveSynced(AuthorizationInfo auth, User user, List<EffectiveRule> rules,
-                                                          IReadOnlyDictionary<string, string?> incoming, bool replace, bool keepUnknown)
+                                                          IReadOnlyDictionary<string, string?> incoming, bool replace)
     {
         var schema = SettingsSchema.Embedded;
-        var filtered = SettingsRules.FilterToSchema(schema, incoming, SettingsSchema.ScopeSynced, keepUnknown);
+        var filtered = SettingsRules.FilterToSchema(schema, incoming, SettingsSchema.ScopeSynced);
         var locked = SettingsRules.LockedKeys(rules);
         return SettingsStore.Current.WithUser(user.Id, files =>
         {
             var values = files.Values;
+            if (SettingsRules.PurgeToSchema(schema, values))
+            {
+                files.ValuesChanged();
+            }
+
             var deviceId = string.IsNullOrEmpty(auth.DeviceId) || auth.DeviceId.Length > SettingsRules.MaxDeviceIdLength ? null : auth.DeviceId;
             var device = deviceId is not null && files.Devices.TryGetValue(deviceId, out var record) ? record : null;
             if (SettingsRules.Apply(schema, values, filtered, locked, replace, device?.Platform))

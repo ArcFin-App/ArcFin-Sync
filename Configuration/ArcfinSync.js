@@ -83,6 +83,7 @@ function settingTitle(key) {
 function describeValue(setting, value) {
     if (value === null || value === undefined) { return "Not set"; }
     if (setting && setting.type === "bool") { return value === "true" ? "On" : "Off"; }
+    if (setting && setting.format === "json") { return value.length > 80 ? value.substring(0, 77) + "…" : value; }
     if (setting && setting.options) {
         for (var i = 0; i < setting.options.length; i++) {
             if (setting.options[i].value === value) { return setting.options[i].title || value; }
@@ -99,6 +100,7 @@ function appDefaultLabel(setting) {
 // A control for a setting's default value. "" in the control means no default.
 function valueControl(setting, value, onChange, unsetLabel) {
     unsetLabel = unsetLabel || appDefaultLabel(setting);
+    if (setting && setting.format === "json") { return jsonControl(setting, value, onChange, unsetLabel); }
     var control;
     var type = setting ? setting.type : "string";
     if (type === "bool" || (setting && setting.options && setting.options.length)) {
@@ -122,10 +124,10 @@ function valueControl(setting, value, onChange, unsetLabel) {
         } else {
             control.value = value === null || value === undefined ? "" : value;
         }
-    } else if (type === "int") {
+    } else if (type === "int" || type === "double") {
         control = el("input", {
-            type: "number", className: "afControl", inputmode: "numeric",
-            min: setting.min, max: setting.max, step: setting.step || 1,
+            type: "number", className: "afControl", inputmode: type === "int" ? "numeric" : "decimal",
+            min: setting.min, max: setting.max, step: setting.step || (type === "int" ? 1 : "any"),
             placeholder: unsetLabel, "aria-label": "Default for " + (setting.title || "")
         });
         control.value = value === null || value === undefined ? "" : value;
@@ -136,11 +138,41 @@ function valueControl(setting, value, onChange, unsetLabel) {
     control.addEventListener("change", function () {
         var v = control.value;
         if (v === "__arcfinUnset") { v = null; }
-        else if (v === "" && (type === "bool" || type === "int" || control.tagName === "SELECT")) { v = null; }
+        else if (v === "" && (type === "bool" || type === "int" || type === "double" || control.tagName === "SELECT")) { v = null; }
         else if (v === "" && type === "string" && control.tagName === "INPUT") { v = null; }
         onChange(v);
     });
     return control;
+}
+
+// A setting the app keeps as a JSON array or object: a short preview, and raw JSON to edit.
+function jsonControl(setting, value, onChange, unsetLabel) {
+    var current = value === null || value === undefined ? null : value;
+    var preview = el("summary", { text: current === null ? unsetLabel : describeValue(setting, current) });
+    var area = el("textarea", { className: "afControl afMono", rows: "6", spellcheck: "false", "aria-label": "JSON default for " + (setting.title || setting.key) });
+    area.value = current === null ? "" : current;
+    var message = el("div", { className: "afRowMeta", text: "A JSON array or object." });
+    var apply = function () {
+        var text = area.value.trim();
+        if (text === "") { message.textContent = "No default."; onChange(null); preview.textContent = unsetLabel; return; }
+        var parsed;
+        try { parsed = JSON.parse(text); } catch (e) { parsed = undefined; }
+        if (parsed === null || typeof parsed !== "object") {
+            message.textContent = "That isn't a JSON array or object, so it wasn't kept.";
+            return;
+        }
+        var compact = JSON.stringify(parsed);
+        if (compact.length > 4096) { message.textContent = "That's longer than 4096 characters, so it wasn't kept."; return; }
+        area.value = compact;
+        message.textContent = "A JSON array or object.";
+        preview.textContent = describeValue(setting, compact);
+        onChange(compact);
+    };
+    area.addEventListener("change", apply);
+    var reset = el("button", {
+        type: "button", className: "afSmallButton", text: "Reset", onclick: function () { area.value = ""; apply(); }
+    });
+    return el("details", { className: "afJson" }, [preview, area, el("div", { className: "afButtons" }, [reset]), message]);
 }
 
 function lockToggle(locked, onChange, label) {
@@ -320,25 +352,6 @@ function renderSettings(view) {
         ]));
     });
 
-    // Keys kept from 0.3 that the app no longer has.
-    var extra = STATE.policy.Settings.filter(function (s) { return !schemaSetting(s.Key); });
-    if (extra.length) {
-        var rows = el("div", { className: "afRows" });
-        extra.forEach(function (s) {
-            rows.appendChild(settingRow({ key: s.Key, type: "string", title: s.Key, detail: "Not an Arcfin setting any more. Kept from an earlier version of this plugin." },
-                STATE.policy.Settings, {
-                    onRemove: function () {
-                        STATE.policy.Settings = STATE.policy.Settings.filter(function (x) { return x.Key !== s.Key; });
-                        markDirty();
-                        renderSettings(view);
-                    }
-                }));
-        });
-        container.appendChild(el("div", { className: "afGroup", "data-group": "legacy" }, [
-            el("h3", { className: "afGroupTitle" }, ["Older settings", el("span", { className: "afGroupCount", text: String(extra.length) })]),
-            rows
-        ]));
-    }
     filterSettings(view);
 }
 

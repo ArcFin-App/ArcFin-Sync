@@ -19,7 +19,7 @@ public static class PolicyService
         {
             var plugin = Plugin.Instance!;
             var config = plugin.Configuration;
-            var (policy, changed) = SettingsRules.Reconcile(config.Policy, config.LockedSettings);
+            var (policy, changed) = SettingsRules.Reconcile(SettingsSchema.Embedded, config.Policy, config.LockedSettings);
             if (changed)
             {
                 config.Policy = policy;
@@ -53,9 +53,8 @@ public static class PolicyService
     }
 
     /// <summary>
-    /// Checks an admin's policy and normalises it: schema keys only (plus any non-schema keys the
-    /// policy already had, carried over from 0.3.x), values of the right type, no duplicates,
-    /// known users. An empty bool/int default counts as no default. seerrUsername is dropped: it's
+    /// Checks an admin's policy and normalises it: schema keys only, values of the right type, no
+    /// duplicates, known users. An empty bool/int/double default counts as no default. seerrUsername is dropped: it's
     /// never one value for everyone and follows seerrAuthMethod instead.
     /// </summary>
     public static (SettingsPolicy? Policy, string? Error) Validate(SettingsSchema schema, SettingsPolicy? incoming, SettingsPolicy existing, Func<Guid, bool> userExists)
@@ -66,8 +65,7 @@ public static class PolicyService
         }
 
         var result = new SettingsPolicy();
-        var existingGlobal = existing.Settings.Select(s => s.Key).ToHashSet(StringComparer.Ordinal);
-        var (global, error) = CleanEntries(schema, incoming.Settings, existingGlobal, isGlobal: true);
+        var (global, error) = CleanEntries(schema, incoming.Settings, isGlobal: true);
         if (error is not null)
         {
             return (null, error);
@@ -87,9 +85,7 @@ public static class PolicyService
                 return (null, $"User {user.UserId} is listed twice.");
             }
 
-            var existingUser = existing.Users.FirstOrDefault(u => u.UserId == user.UserId)?.Settings.Select(s => s.Key).ToHashSet(StringComparer.Ordinal)
-                               ?? new HashSet<string>(StringComparer.Ordinal);
-            var (entries, userError) = CleanEntries(schema, user.Settings, existingUser, isGlobal: false);
+            var (entries, userError) = CleanEntries(schema, user.Settings, isGlobal: false);
             if (userError is not null)
             {
                 return (null, userError);
@@ -104,7 +100,36 @@ public static class PolicyService
         return (result, null);
     }
 
-    private static (List<PolicySetting>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<PolicySetting>? entries, HashSet<string> carried, bool isGlobal)
+    private static string InvalidValueMessage(SchemaSetting setting)
+    {
+        var key = setting.Key;
+        if (setting.Type == "bool")
+        {
+            return $"{key} must be true or false.";
+        }
+
+        if (setting.Format == "json")
+        {
+            return $"{key} must be a JSON array or object.";
+        }
+
+        if (setting.Options is { Count: > 0 })
+        {
+            return $"{key} must be one of {string.Join(", ", setting.Options.Select(o => o.Value))}.";
+        }
+
+        if (setting.Type == "double")
+        {
+            var range = setting.Min is not null || setting.Max is not null
+                ? $" from {setting.Min?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "any"} to {setting.Max?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "any"}"
+                : string.Empty;
+            return $"{key} must be a number written with a dot{range}.";
+        }
+
+        return $"{key} must be a whole number.";
+    }
+
+    private static (List<PolicySetting>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<PolicySetting>? entries, bool isGlobal)
     {
         var result = new List<PolicySetting>();
         if (entries is null)
@@ -136,7 +161,7 @@ public static class PolicyService
             }
 
             var setting = schema.Find(entry.Key);
-            if (setting is null && !carried.Contains(entry.Key))
+            if (setting is null)
             {
                 return (null, $"{entry.Key} isn't an Arcfin setting.");
             }
@@ -154,15 +179,13 @@ public static class PolicyService
 
             if (setting is not null && value is not null)
             {
-                if (value.Length == 0 && setting.Type is "bool" or "int")
+                if (value.Length == 0 && (setting.Type is "bool" or "int" or "double" || setting.Format == "json"))
                 {
                     value = null;
                 }
                 else if (!SettingsSchema.IsValidValue(setting, value))
                 {
-                    return (null, setting.Type == "bool" ? $"{entry.Key} must be true or false."
-                        : setting.Options is { Count: > 0 } ? $"{entry.Key} must be one of {string.Join(", ", setting.Options.Select(o => o.Value))}."
-                        : $"{entry.Key} must be a whole number.");
+                    return (null, InvalidValueMessage(setting));
                 }
             }
 

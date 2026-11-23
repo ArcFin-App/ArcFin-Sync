@@ -59,7 +59,7 @@ public class ArcfinSyncAdminController : ControllerBase
                 Name = u.Username,
                 IsAdministrator = u.HasPermission(PermissionKind.IsAdministrator),
                 Devices = DeviceDto.List(store.LoadDevices(u.Id), null),
-                Settings = store.LoadValues(u.Id)
+                Settings = store.LoadSyncedValues(u.Id, SettingsSchema.Embedded)
             })
             .ToList();
     }

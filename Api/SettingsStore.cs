@@ -47,6 +47,23 @@ public sealed class SettingsStore
         }
     }
 
+    /// <summary>
+    /// The user's stored synced values. Anything else in the file (0.3.x keys, settings the app
+    /// dropped, device-only keys) is removed from it on the way, once.
+    /// </summary>
+    public Dictionary<string, string?> LoadSyncedValues(Guid userId, SettingsSchema schema)
+    {
+        return WithUser(userId, files =>
+        {
+            if (SettingsRules.PurgeToSchema(schema, files.Values))
+            {
+                files.ValuesChanged();
+            }
+
+            return new Dictionary<string, string?>(files.Values, StringComparer.Ordinal);
+        });
+    }
+
     public Dictionary<string, DeviceRecord> LoadDevices(Guid userId)
     {
         RequireUser(userId);

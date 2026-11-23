@@ -23,7 +23,11 @@ public class SettingsRulesTests
           "options": [ { "value": "Max", "title": "Max" } ] },
         { "key": "seerrAuthMethod", "type": "string", "scope": "synced", "title": "Seerr Account Type" },
         { "key": "seerrUsername", "type": "string", "scope": "synced", "title": "Seerr Username" },
-        { "key": "codecAllowHEVCDirectPlay", "type": "bool", "scope": "device", "title": "HEVC" }
+        { "key": "codecAllowHEVCDirectPlay", "type": "bool", "scope": "device", "title": "HEVC" },
+        { "key": "playbackSpeed", "type": "double", "scope": "synced", "title": "Speed", "min": 0.5, "max": 2 },
+        { "key": "subtitleScale", "type": "double", "scope": "synced", "title": "Scale",
+          "options": [ { "value": "0.75", "title": "Small" }, { "value": "1.0", "title": "Normal" } ] },
+        { "key": "homeShelves", "type": "string", "format": "json", "scope": "synced", "title": "Home shelves" }
       ]
     }
     """);
@@ -136,13 +140,13 @@ public class SettingsRulesTests
         {
             new() { Key = "videoQuality", IsLocked = true, PrefillValue = "1080p" },
             new() { Key = "skipIntro", IsLocked = false, PrefillValue = "false" },
-            new() { Key = "streamystatsURL", IsLocked = false, PrefillValue = null },
+            new() { Key = "seerrURL", IsLocked = false, PrefillValue = null },
             new() { Key = "seerrAuthMethod", IsLocked = authLocked, PrefillValue = authMethod },
-            new() { Key = "offlineModeEnabled", IsLocked = true, PrefillValue = "false" }
+            new() { Key = "skipForwardSeconds", IsLocked = true, PrefillValue = "10" }
         };
-        var stored = new Dictionary<string, string?> { ["skipIntro"] = "true", ["videoQuality"] = "Max", ["seerrUsername"] = "bob", ["unknownOld"] = "1" };
+        var stored = new Dictionary<string, string?> { ["skipIntro"] = "true", ["videoQuality"] = "Max", ["seerrUsername"] = "bob", ["tvOnly"] = "true" };
 
-        var (policy, _) = SettingsRules.Reconcile(null, legacy);
+        var (policy, _) = SettingsRules.Reconcile(Schema, null, legacy);
         var now = SettingsRules.LegacyMerge(SettingsRules.RulesForUser(policy, Alice), stored, "alice");
         var old = OldMerge(legacy, stored, "alice");
 
@@ -174,10 +178,6 @@ public class SettingsRulesTests
         Assert.Equal("local", stored["seerrAuthMethod"]);
 
         Assert.False(SettingsRules.Apply(Schema, stored, incoming, locked, replace: false));
-
-        var full = Enumerable.Range(0, SettingsRules.MaxStoredKeys).ToDictionary(i => $"k{i}", _ => (string?)"v");
-        Assert.False(SettingsRules.Apply(Schema, full, new Dictionary<string, string?> { ["oneMore"] = "v" }, new HashSet<string>(), replace: false));
-        Assert.True(SettingsRules.Apply(Schema, full, new Dictionary<string, string?> { ["k0"] = "changed" }, new HashSet<string>(), replace: false));
     }
 
     [Fact]
@@ -196,11 +196,58 @@ public class SettingsRulesTests
         var synced = SettingsRules.FilterToSchema(Schema, raw, SettingsSchema.ScopeSynced);
         Assert.Equal(new[] { "skipForwardSeconds", "videoQuality" }, synced.Keys.OrderBy(k => k));
 
-        var legacy = SettingsRules.FilterToSchema(Schema, raw, SettingsSchema.ScopeSynced, keepUnknown: true);
-        Assert.Equal(new[] { "accessToken", "skipForwardSeconds", "videoQuality" }, legacy.Keys.OrderBy(k => k, StringComparer.Ordinal));
-
         var snapshot = SettingsRules.FilterToSchema(Schema, raw, null);
         Assert.Equal(new[] { "codecAllowHEVCDirectPlay", "skipForwardSeconds", "videoQuality" }, snapshot.Keys.OrderBy(k => k));
+    }
+
+    [Theory]
+    [InlineData("playbackSpeed", "1.25", true)]
+    [InlineData("playbackSpeed", "2", true)]
+    [InlineData("playbackSpeed", "1,25", false)]
+    [InlineData("playbackSpeed", "2.5", false)]
+    [InlineData("playbackSpeed", "NaN", false)]
+    [InlineData("playbackSpeed", "Infinity", false)]
+    [InlineData("subtitleScale", "1", true)]
+    [InlineData("subtitleScale", "0.75", true)]
+    [InlineData("subtitleScale", "0.8", false)]
+    [InlineData("homeShelves", "[\"continue\",\"latest\"]", true)]
+    [InlineData("homeShelves", "{\"a\":1}", true)]
+    [InlineData("homeShelves", "\"just a string\"", false)]
+    [InlineData("homeShelves", "[1,", false)]
+    public void DoubleAndJsonValues(string key, string value, bool valid)
+    {
+        Assert.Equal(valid, SettingsSchema.IsValidValue(Schema.Find(key)!, value));
+    }
+
+    [Fact]
+    public void PurgeKeepsOnlySyncedSchemaKeys()
+    {
+        var stored = new Dictionary<string, string?> { ["skipIntro"] = "true", ["offlineModeEnabled"] = "true", ["codecAllowHEVCDirectPlay"] = "true" };
+        Assert.True(SettingsRules.PurgeToSchema(Schema, stored));
+        Assert.Equal(new[] { "skipIntro" }, stored.Keys);
+        Assert.False(SettingsRules.PurgeToSchema(Schema, stored));
+    }
+
+    [Fact]
+    public void ReconcileDropsKeysTheSchemaDoesNotList()
+    {
+        var legacy = new List<LockedSetting>
+        {
+            new() { Key = "offlineModeEnabled", IsLocked = true, PrefillValue = "false" },
+            new() { Key = "skipIntro", IsLocked = true, PrefillValue = "true" },
+            new() { Key = "streamystatsURL", PrefillValue = null }
+        };
+        var (migrated, _) = SettingsRules.Reconcile(Schema, null, legacy);
+        Assert.Equal(new[] { "skipIntro" }, migrated.Settings.Select(s => s.Key));
+
+        // A 0.4.0 policy that still holds them: dropped, and the configuration saved once.
+        var old = Policy(P("offlineModeEnabled", "false", true), P("skipIntro", "true", true));
+        old.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { P("streamystatsURL", "x", false) } });
+        var (cleaned, changed) = SettingsRules.Reconcile(Schema, old, SettingsRules.ToLegacy(old));
+        Assert.True(changed);
+        Assert.Equal(new[] { "skipIntro" }, cleaned.Settings.Select(s => s.Key));
+        Assert.Empty(cleaned.Users);
+        Assert.False(SettingsRules.Reconcile(Schema, cleaned, SettingsRules.ToLegacy(cleaned)).Changed);
     }
 
     [Fact]
@@ -216,17 +263,17 @@ public class SettingsRulesTests
     public void ReconcileMigratesKeepsAndReimports()
     {
         var legacy = new List<LockedSetting> { new() { Key = "skipIntro", IsLocked = true, PrefillValue = "true" } };
-        var (migrated, changed) = SettingsRules.Reconcile(null, legacy);
+        var (migrated, changed) = SettingsRules.Reconcile(Schema, null, legacy);
         Assert.True(changed);
         Assert.Equal(("skipIntro", "true", true), (migrated.Settings[0].Key, migrated.Settings[0].DefaultValue, migrated.Settings[0].Locked));
 
         migrated.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, false) } });
-        var (same, unchanged) = SettingsRules.Reconcile(migrated, SettingsRules.ToLegacy(migrated));
+        var (same, unchanged) = SettingsRules.Reconcile(Schema, migrated, SettingsRules.ToLegacy(migrated));
         Assert.False(unchanged);
         Assert.Same(migrated, same);
 
         var editedByOldPlugin = new List<LockedSetting> { new() { Key = "skipIntro", IsLocked = false, PrefillValue = "false" } };
-        var (reimported, again) = SettingsRules.Reconcile(migrated, editedByOldPlugin);
+        var (reimported, again) = SettingsRules.Reconcile(Schema, migrated, editedByOldPlugin);
         Assert.True(again);
         Assert.False(reimported.Settings[0].Locked);
         Assert.Single(reimported.Users);
@@ -235,27 +282,32 @@ public class SettingsRulesTests
     [Fact]
     public void ReconcileSettlesOnDuplicateLegacyEntries()
     {
-        var legacy = new List<LockedSetting> { new() { Key = "a", PrefillValue = "1" }, new() { Key = "a", PrefillValue = "2" } };
-        var (policy, _) = SettingsRules.Reconcile(null, legacy);
-        var (_, changed) = SettingsRules.Reconcile(policy, SettingsRules.ToLegacy(policy));
+        var legacy = new List<LockedSetting> { new() { Key = "skipIntro", PrefillValue = "true" }, new() { Key = "skipIntro", PrefillValue = "false" } };
+        var (policy, _) = SettingsRules.Reconcile(Schema, null, legacy);
+        var (_, changed) = SettingsRules.Reconcile(Schema, policy, SettingsRules.ToLegacy(policy));
         Assert.False(changed);
     }
 
     [Fact]
     public void PolicyValidation()
     {
-        var existing = Policy(P("offlineModeEnabled", "false", true));
+        var existing = Policy(P("skipIntro", "false", true));
         bool Known(Guid id) => id == Alice;
 
         var ok = new SettingsPolicy
         {
-            Settings = { P("offlineModeEnabled", "false", false), P("skipForwardSeconds", "", false), P("seerrUsername", "x", true), P("skipIntro", "true", true) },
+            Settings = { P("playbackSpeed", "1.5", false), P("skipForwardSeconds", "", false), P("seerrUsername", "x", true), P("skipIntro", "true", true), P("homeShelves", "", false) },
             Users = { new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, false) } } }
         };
         var (clean, error) = PolicyService.Validate(Schema, ok, existing, Known);
         Assert.Null(error);
-        Assert.Equal(new[] { "offlineModeEnabled", "skipForwardSeconds", "skipIntro" }, clean!.Settings.Select(s => s.Key));
+        Assert.Equal(new[] { "playbackSpeed", "skipForwardSeconds", "skipIntro", "homeShelves" }, clean!.Settings.Select(s => s.Key));
         Assert.Null(clean.Settings[1].DefaultValue);
+        Assert.Null(clean.Settings[3].DefaultValue);
+
+        Assert.NotNull(PolicyService.Validate(Schema, Policy(P("offlineModeEnabled", "false", true)), existing, Known).Error);
+        Assert.NotNull(PolicyService.Validate(Schema, Policy(P("playbackSpeed", "3", false)), existing, Known).Error);
+        Assert.NotNull(PolicyService.Validate(Schema, Policy(P("homeShelves", "not json", false)), existing, Known).Error);
 
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("newUnknown", "1", true)), existing, Known).Error);
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("videoQuality", "Max\u0001", true)), existing, Known).Error);

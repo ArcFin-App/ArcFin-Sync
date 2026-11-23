@@ -19,7 +19,6 @@ public static class SettingsRules
     public const int MaxDevicesPerUser = 50;
     public const int MaxDeviceIdLength = 256;
     public const int MaxFieldLength = 128;
-    public const int MaxStoredKeys = 1024;
 
     public const string SeerrUsername = "seerrUsername";
     public const string SeerrAuthMethod = "seerrAuthMethod";
@@ -75,8 +74,7 @@ public static class SettingsRules
     /// Keeps the schema keys of the given scope (any scope when null) whose values fit their type.
     /// Anything else is dropped rather than refused: the app and the plugin can be a version apart.
     /// </summary>
-    public static Dictionary<string, string?> FilterToSchema(SettingsSchema schema, IReadOnlyDictionary<string, string?>? values, string? scope,
-                                                             bool keepUnknown = false)
+    public static Dictionary<string, string?> FilterToSchema(SettingsSchema schema, IReadOnlyDictionary<string, string?>? values, string? scope)
     {
         var result = new Dictionary<string, string?>(StringComparer.Ordinal);
         if (values is null)
@@ -87,17 +85,7 @@ public static class SettingsRules
         foreach (var (key, value) in values)
         {
             var setting = schema.Find(key);
-            if (setting is null)
-            {
-                if (keepUnknown)
-                {
-                    result[key] = value;
-                }
-
-                continue;
-            }
-
-            if (scope is not null && setting.Scope != scope)
+            if (setting is null || (scope is not null && setting.Scope != scope))
             {
                 continue;
             }
@@ -298,7 +286,7 @@ public static class SettingsRules
             {
                 changed |= stored.Remove(key);
             }
-            else if (stored.TryGetValue(key, out var old) ? old != value : stored.Count < MaxStoredKeys)
+            else if (!stored.TryGetValue(key, out var old) || old != value)
             {
                 stored[key] = value;
                 changed = true;
@@ -345,27 +333,61 @@ public static class SettingsRules
     }
 
     /// <summary>
+    /// Removes stored values that aren't synced settings in the schema: keys from 0.3.x or from
+    /// settings the app has dropped, and device-only keys. Returns whether anything was removed.
+    /// </summary>
+    public static bool PurgeToSchema(SettingsSchema schema, Dictionary<string, string?> stored)
+    {
+        var removed = false;
+        foreach (var key in stored.Keys.ToList())
+        {
+            if (!schema.IsSynced(key))
+            {
+                stored.Remove(key);
+                removed = true;
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>
     /// Brings <see cref="PluginConfiguration.Policy"/> up to date with the legacy list: built from
     /// it after an upgrade, and the global part re-imported when something wrote only the legacy
     /// list (0.3.x after a downgrade, or the generic plugin configuration API). User overrides stay.
-    /// Returns the policy to use and whether the configuration needs saving.
+    /// Keys that aren't in the schema are dropped from both. Returns the policy to use and whether
+    /// the configuration needs saving.
     /// </summary>
-    public static (SettingsPolicy Policy, bool Changed) Reconcile(SettingsPolicy? policy, List<LockedSetting>? legacy)
+    public static (SettingsPolicy Policy, bool Changed) Reconcile(SettingsSchema schema, SettingsPolicy? policy, List<LockedSetting>? legacy)
     {
         legacy ??= new List<LockedSetting>();
+        var known = legacy.Where(l => schema.Find(l.Key) is not null).ToList();
         if (policy is null)
         {
-            return (FromLegacy(legacy), true);
+            return (FromLegacy(known), true);
         }
 
         policy.Settings ??= new List<PolicySetting>();
         policy.Users ??= new List<UserPolicyOverride>();
-        if (LegacyMatches(ToLegacy(policy), legacy))
+        var dropped = policy.Settings.RemoveAll(s => schema.Find(s.Key) is null) > 0;
+        foreach (var user in policy.Users)
         {
-            return (policy, false);
+            user.Settings ??= new List<PolicySetting>();
+            dropped |= user.Settings.RemoveAll(s => schema.Find(s.Key) is null) > 0;
         }
 
-        var reimported = FromLegacy(legacy);
+        dropped |= policy.Users.RemoveAll(u => u.Settings.Count == 0) > 0;
+        if (LegacyMatches(ToLegacy(policy), legacy))
+        {
+            return (policy, dropped);
+        }
+
+        if (LegacyMatches(ToLegacy(policy), known))
+        {
+            return (policy, true);
+        }
+
+        var reimported = FromLegacy(known);
         reimported.Users = policy.Users;
         return (reimported, true);
     }
