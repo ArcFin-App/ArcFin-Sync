@@ -55,13 +55,13 @@ public static class PolicyService
         }
 
         var result = new SettingsPolicy();
-        var (global, error) = CleanEntries(schema, incoming.Settings, isGlobal: true);
+        var (global, error) = CleanEntries(schema, incoming.Settings?.Select(s => s is null ? null : new Entry(s.Key, s.DefaultValue, s.Locked)).ToList(), isGlobal: true);
         if (error is not null)
         {
             return (null, error);
         }
 
-        result.Settings = global!;
+        result.Settings = global!.Select(e => new PolicySetting { Key = e.Key, DefaultValue = e.Value, Locked = e.Locked == true }).ToList();
         var seenUsers = new HashSet<Guid>();
         foreach (var user in incoming.Users ?? new List<UserPolicyOverride>())
         {
@@ -75,15 +75,18 @@ public static class PolicyService
                 return (null, $"User {user.UserId} is listed twice.");
             }
 
-            var (entries, userError) = CleanEntries(schema, user.Settings, isGlobal: false);
+            var (entries, userError) = CleanEntries(schema, user.Settings?.Select(s => s is null ? null : new Entry(s.Key, s.DefaultValue, s.Locked)).ToList(), isGlobal: false);
             if (userError is not null)
             {
                 return (null, userError);
             }
 
-            if (entries!.Count > 0)
+            // An entry with neither its own default nor its own lock is the same as none.
+            var settings = entries!.Where(e => e.Value is not null || e.Locked is not null)
+                .Select(e => new UserPolicySetting { Key = e.Key, DefaultValue = e.Value, Locked = e.Locked }).ToList();
+            if (settings.Count > 0)
             {
-                result.Users.Add(new UserPolicyOverride { UserId = user.UserId, Settings = entries });
+                result.Users.Add(new UserPolicyOverride { UserId = user.UserId, Settings = settings });
             }
         }
 
@@ -119,9 +122,13 @@ public static class PolicyService
         return $"{key} must be a whole number.";
     }
 
-    private static (List<PolicySetting>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<PolicySetting>? entries, bool isGlobal)
+    private sealed record Entry(string? Key, string? Value, bool? Locked);
+
+    private sealed record CleanEntry(string Key, string? Value, bool? Locked);
+
+    private static (List<CleanEntry>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<Entry?>? entries, bool isGlobal)
     {
-        var result = new List<PolicySetting>();
+        var result = new List<CleanEntry>();
         if (entries is null)
         {
             return (result, null);
@@ -156,7 +163,7 @@ public static class PolicyService
                 return (null, $"{entry.Key} isn't an Arcfin setting.");
             }
 
-            var value = entry.DefaultValue;
+            var value = entry.Value;
             if (value is not null && value.Any(char.IsControl))
             {
                 return (null, $"The value of {entry.Key} can't contain control characters.");
@@ -181,13 +188,13 @@ public static class PolicyService
 
             // A server-wide lock needs a value to pin, or every device would keep whatever it has.
             // Unset, it locks to the app's own default. A user's override with no value takes
-            // the server-wide one instead.
-            if (isGlobal && entry.Locked && value is null)
+            // the server-wide one instead, as one with no lock of its own takes the server-wide lock.
+            if (isGlobal && entry.Locked == true && value is null)
             {
                 value = setting?.Default;
             }
 
-            result.Add(new PolicySetting { Key = entry.Key, DefaultValue = value, Locked = entry.Locked });
+            result.Add(new CleanEntry(entry.Key, value, isGlobal ? entry.Locked == true : entry.Locked));
         }
 
         return (result, null);

@@ -185,6 +185,17 @@ function lockToggle(locked, onChange, label) {
     return el("label", { className: "afLock", title: "Everyone gets this value and can't change it in Arcfin" }, [box, el("span", { text: "Lock" })]);
 }
 
+// A user's lock: the server-wide one (null), or their own either way.
+function userLockChoice(locked, onChange, label) {
+    var select = el("select", { className: "afControl", "aria-label": label });
+    [["", "Same as everyone"], ["true", "Locked"], ["false", "Not locked"]].forEach(function (o) {
+        select.appendChild(el("option", { value: o[0], text: o[1] }));
+    });
+    select.value = locked === true ? "true" : (locked === false ? "false" : "");
+    select.addEventListener("change", function () { onChange(select.value === "" ? null : select.value === "true"); });
+    return select;
+}
+
 // ----- Policy model -----
 
 // Locked, or a default that isn't the app's own. The 0.3 page saved every row with the value it
@@ -225,7 +236,10 @@ function cleanPolicy(policy) {
         if (s.Locked || (s.DefaultValue !== null && s.DefaultValue !== undefined)) { result.Settings.push(s); }
     });
     policy.Users.forEach(function (u) {
-        if (u.Settings.length) { result.Users.push({ UserId: u.UserId, Settings: u.Settings }); }
+        var own = u.Settings.filter(function (s) {
+            return (s.Locked !== null && s.Locked !== undefined) || (s.DefaultValue !== null && s.DefaultValue !== undefined);
+        });
+        if (own.length) { result.Users.push({ UserId: u.UserId, Settings: own }); }
     });
     return result;
 }
@@ -315,7 +329,9 @@ function settingRow(setting, entries, options) {
     row.appendChild(controlCell);
 
     var actions = el("div", { className: "afDeviceActions" }, [
-        lockToggle(entry && entry.Locked, function (on) {
+        options.isOverride ? userLockChoice(entry ? entry.Locked : null, function (choice) {
+            update(function (e) { e.Locked = choice; });
+        }, "Lock " + (setting.title || key) + " for this user") : lockToggle(entry && entry.Locked, function (on) {
             update(function (e) {
                 e.Locked = on;
                 // A server-wide lock pins a value: with none chosen, it's the app's default.
@@ -493,8 +509,8 @@ function overridesSection(view, user) {
                 type: "button", className: "afSmallButton", text: "Add Override", onclick: function () {
                     if (!picker.value) { return; }
                     record = overridesFor(user.UserId, true);
-                    var global = findEntry(STATE.policy.Settings, picker.value);
-                    record.Settings.push({ Key: picker.value, DefaultValue: global ? global.DefaultValue : null, Locked: global ? global.Locked : false });
+                    // Nothing of its own yet: the server-wide default and lock until one is chosen.
+                    record.Settings.push({ Key: picker.value, DefaultValue: null, Locked: null });
                     markDirty();
                     draw();
                 }

@@ -103,13 +103,13 @@ public static class SettingsRules
 
     /// <summary>
     /// The global rules with this user's overrides applied, in the global list's order and then
-    /// the user's extra keys. An override replaces the lock outright (so it can also unlock);
-    /// its default falls back to the global one.
+    /// the user's extra keys. An override's lock, when it has one, replaces the global lock (so it
+    /// can also unlock); without one, and for its default, the global one applies.
     /// </summary>
     public static List<EffectiveRule> RulesForUser(SettingsPolicy policy, Guid userId)
     {
-        var overrides = policy.Users.FirstOrDefault(u => u.UserId == userId)?.Settings ?? new List<PolicySetting>();
-        var overrideByKey = new Dictionary<string, PolicySetting>(StringComparer.Ordinal);
+        var overrides = policy.Users.FirstOrDefault(u => u.UserId == userId)?.Settings ?? new List<UserPolicySetting>();
+        var overrideByKey = new Dictionary<string, UserPolicySetting>(StringComparer.Ordinal);
         foreach (var o in overrides)
         {
             overrideByKey.TryAdd(o.Key, o);
@@ -126,7 +126,7 @@ public static class SettingsRules
 
             if (overrideByKey.TryGetValue(global.Key, out var o))
             {
-                result.Add(new EffectiveRule(global.Key, o.DefaultValue ?? global.DefaultValue, o.Locked));
+                result.Add(new EffectiveRule(global.Key, o.DefaultValue ?? global.DefaultValue, o.Locked ?? global.Locked));
             }
             else
             {
@@ -138,7 +138,7 @@ public static class SettingsRules
         {
             if (seen.Add(o.Key))
             {
-                result.Add(new EffectiveRule(o.Key, o.DefaultValue, o.Locked));
+                result.Add(new EffectiveRule(o.Key, o.DefaultValue, o.Locked ?? false));
             }
         }
 
@@ -375,8 +375,8 @@ public static class SettingsRules
         var dropped = policy.Settings.RemoveAll(s => schema.Find(s.Key) is null) > 0;
         foreach (var user in policy.Users)
         {
-            user.Settings ??= new List<PolicySetting>();
-            dropped |= user.Settings.RemoveAll(s => schema.Find(s.Key) is null) > 0;
+            user.Settings ??= new List<UserPolicySetting>();
+            dropped |= user.Settings.RemoveAll(s => schema.Find(s.Key) is null || (s.DefaultValue is null && s.Locked is null)) > 0;
         }
 
         dropped |= policy.Users.RemoveAll(u => u.Settings.Count == 0) > 0;

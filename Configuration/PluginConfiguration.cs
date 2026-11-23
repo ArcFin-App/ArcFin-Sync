@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Xml.Serialization;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.ArcfinSync.Configuration;
@@ -52,5 +53,21 @@ public class UserPolicyOverride
 {
     public Guid UserId { get; set; }
 
-    public List<PolicySetting> Settings { get; set; } = new();
+    /// <summary>Saved under the element name 0.4 betas used, so their files still read.</summary>
+    [XmlArrayItem("PolicySetting")]
+    public List<UserPolicySetting> Settings { get; set; } = new();
+}
+
+/// <summary>
+/// One user's own default and lock for a setting. A null <see cref="Locked"/> follows the
+/// server-wide lock, so a user can have their own default and still be locked or unlocked with
+/// everyone else.
+/// </summary>
+public class UserPolicySetting
+{
+    public string Key { get; set; } = string.Empty;
+
+    public string? DefaultValue { get; set; }
+
+    public bool? Locked { get; set; }
 }

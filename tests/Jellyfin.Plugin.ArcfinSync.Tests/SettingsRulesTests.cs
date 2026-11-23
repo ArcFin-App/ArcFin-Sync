@@ -37,11 +37,13 @@ public class SettingsRulesTests
 
     private static PolicySetting P(string key, string? value, bool locked) => new() { Key = key, DefaultValue = value, Locked = locked };
 
+    private static UserPolicySetting U(string key, string? value, bool? locked) => new() { Key = key, DefaultValue = value, Locked = locked };
+
     [Fact]
     public void UserOverrideLockWinsAndCanUnlock()
     {
         var policy = Policy(P("skipIntro", "true", true), P("videoQuality", "Max", false));
-        policy.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, false), P("videoQuality", "720p", true) } });
+        policy.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", null, false), U("videoQuality", "720p", true) } });
 
         var alice = SettingsRules.RulesForUser(policy, Alice);
         Assert.Equal(new EffectiveRule("skipIntro", "true", false), alice[0]);
@@ -246,7 +248,7 @@ public class SettingsRulesTests
 
         // A 0.4.0 policy that still holds them: dropped, and the configuration saved once.
         var old = Policy(P("offlineModeEnabled", "false", true), P("skipIntro", "true", true));
-        old.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { P("streamystatsURL", "x", false) } });
+        old.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { U("streamystatsURL", "x", false) } });
         var (cleaned, changed) = SettingsRules.Reconcile(Schema, old, SettingsRules.ToLegacy(old));
         Assert.True(changed);
         Assert.Equal(new[] { "skipIntro" }, cleaned.Settings.Select(s => s.Key));
@@ -290,7 +292,7 @@ public class SettingsRulesTests
         Assert.True(changed);
         Assert.Equal(("skipIntro", "true", true), (migrated.Settings[0].Key, migrated.Settings[0].DefaultValue, migrated.Settings[0].Locked));
 
-        migrated.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, false) } });
+        migrated.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", null, false) } });
         var (same, unchanged) = SettingsRules.Reconcile(Schema, migrated, SettingsRules.ToLegacy(migrated));
         Assert.False(unchanged);
         Assert.Same(migrated, same);
@@ -320,7 +322,7 @@ public class SettingsRulesTests
         var ok = new SettingsPolicy
         {
             Settings = { P("playbackSpeed", "1.5", false), P("skipForwardSeconds", "", false), P("seerrUsername", "x", true), P("skipIntro", "true", true), P("homeShelves", "", false) },
-            Users = { new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, false) } } }
+            Users = { new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", null, false) } } }
         };
         var (clean, error) = PolicyService.Validate(Schema, ok, existing, Known);
         Assert.Null(error);
@@ -338,7 +340,7 @@ public class SettingsRulesTests
         var lockedNoValue = PolicyService.Validate(Schema, new SettingsPolicy
         {
             Settings = { P("skipIntro", null, true) },
-            Users = { new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, true) } } }
+            Users = { new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", null, true) } } }
         }, existing, Known).Policy!;
         Assert.Equal("false", lockedNoValue.Settings[0].DefaultValue);
         Assert.Null(lockedNoValue.Users[0].Settings[0].DefaultValue);
@@ -359,5 +361,53 @@ public class SettingsRulesTests
         Assert.Equal(fails, error is not null);
         Assert.Equal(expected, name);
         Assert.NotNull(SettingsRules.CleanName(new string('n', 65)).Error);
+    }
+
+    [Fact]
+    public void AUserWithTheirOwnDefaultFollowsTheServerWideLock()
+    {
+        var policy = Policy(P("skipIntro", "true", true));
+        policy.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", "false", null), U("videoQuality", "Max", null) } });
+        var alice = SettingsRules.RulesForUser(policy, Alice);
+        Assert.Equal(new EffectiveRule("skipIntro", "false", true), alice[0]);
+        Assert.Equal(new EffectiveRule("videoQuality", "Max", false), alice[1]);
+
+        policy.Settings[0].Locked = false;
+        Assert.Equal(new EffectiveRule("skipIntro", "false", false), SettingsRules.RulesForUser(policy, Alice)[0]);
+    }
+
+    [Fact]
+    public void ValidateKeepsAUserFollowingTheLockAndDropsAnEmptyEntry()
+    {
+        var (clean, error) = PolicyService.Validate(Schema, new SettingsPolicy
+        {
+            Users = { new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", "true", null), U("videoQuality", null, null), U("tvOnly", null, false) } } }
+        }, new SettingsPolicy(), id => id == Alice);
+        Assert.Null(error);
+        var settings = clean!.Users.Single().Settings;
+        Assert.Equal(new[] { "skipIntro", "tvOnly" }, settings.Select(s => s.Key));
+        Assert.Null(settings[0].Locked);
+        Assert.False(settings[1].Locked);
+    }
+
+    [Fact]
+    public void AUsersLockSurvivesTheConfigurationFileEitherWay()
+    {
+        var config = new PluginConfiguration { Policy = new SettingsPolicy() };
+        config.Policy.Users.Add(new UserPolicyOverride { UserId = Alice, Settings = { U("skipIntro", "true", null), U("tvOnly", null, true) } });
+        var serializer = new System.Xml.Serialization.XmlSerializer(typeof(PluginConfiguration));
+        using var writer = new StringWriter();
+        serializer.Serialize(writer, config);
+        Assert.Contains("<PolicySetting>", writer.ToString());
+        var read = (PluginConfiguration)serializer.Deserialize(new StringReader(writer.ToString()))!;
+        var settings = read.Policy!.Users.Single().Settings;
+        Assert.Null(settings[0].Locked);
+        Assert.Equal("true", settings[0].DefaultValue);
+        Assert.True(settings[1].Locked);
+
+        // A file from before, where every user entry had a lock of its own: kept as it was.
+        var old = writer.ToString().Replace("<Locked xsi:nil=\"true\" />", "<Locked>false</Locked>");
+        var before = (PluginConfiguration)serializer.Deserialize(new StringReader(old))!;
+        Assert.False(before.Policy!.Users.Single().Settings[0].Locked);
     }
 }
