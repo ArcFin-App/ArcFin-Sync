@@ -160,6 +160,10 @@ public class SettingsRulesTests
         Assert.Equal("keep", stored["legacyKey"]);
 
         Assert.False(SettingsRules.Apply(Schema, stored, incoming, locked, replace: false));
+
+        var full = Enumerable.Range(0, SettingsRules.MaxStoredKeys).ToDictionary(i => $"k{i}", _ => (string?)"v");
+        Assert.False(SettingsRules.Apply(Schema, full, new Dictionary<string, string?> { ["oneMore"] = "v" }, new HashSet<string>(), replace: false));
+        Assert.True(SettingsRules.Apply(Schema, full, new Dictionary<string, string?> { ["k0"] = "changed" }, new HashSet<string>(), replace: false));
     }
 
     [Fact]
@@ -176,6 +180,9 @@ public class SettingsRulesTests
 
         var synced = SettingsRules.FilterToSchema(Schema, raw, SettingsSchema.ScopeSynced);
         Assert.Equal(new[] { "skipForwardSeconds", "videoQuality" }, synced.Keys.OrderBy(k => k));
+
+        var legacy = SettingsRules.FilterToSchema(Schema, raw, SettingsSchema.ScopeSynced, keepUnknown: true);
+        Assert.Equal(new[] { "accessToken", "skipForwardSeconds", "videoQuality" }, legacy.Keys.OrderBy(k => k, StringComparer.Ordinal));
 
         var snapshot = SettingsRules.FilterToSchema(Schema, raw, null);
         Assert.Equal(new[] { "codecAllowHEVCDirectPlay", "skipForwardSeconds", "videoQuality" }, snapshot.Keys.OrderBy(k => k));
@@ -236,6 +243,15 @@ public class SettingsRulesTests
         Assert.Null(clean.Settings[1].DefaultValue);
 
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("newUnknown", "1", true)), existing, Known).Error);
+        Assert.NotNull(PolicyService.Validate(Schema, Policy(P("videoQuality", "Max\u0001", true)), existing, Known).Error);
+
+        var lockedNoValue = PolicyService.Validate(Schema, new SettingsPolicy
+        {
+            Settings = { P("skipIntro", null, true) },
+            Users = { new UserPolicyOverride { UserId = Alice, Settings = { P("skipIntro", null, true) } } }
+        }, existing, Known).Policy!;
+        Assert.Equal("false", lockedNoValue.Settings[0].DefaultValue);
+        Assert.Null(lockedNoValue.Users[0].Settings[0].DefaultValue);
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("skipIntro", "yes", true)), existing, Known).Error);
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("skipIntro", "true", true), P("skipIntro", "false", true)), existing, Known).Error);
         Assert.NotNull(PolicyService.Validate(Schema, new SettingsPolicy { Users = { new UserPolicyOverride { UserId = Bob } } }, existing, Known).Error);

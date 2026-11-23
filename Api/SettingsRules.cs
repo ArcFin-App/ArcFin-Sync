@@ -19,6 +19,7 @@ public static class SettingsRules
     public const int MaxDevicesPerUser = 50;
     public const int MaxDeviceIdLength = 256;
     public const int MaxFieldLength = 128;
+    public const int MaxStoredKeys = 1024;
 
     public const string SeerrUsername = "seerrUsername";
     public const string SeerrAuthMethod = "seerrAuthMethod";
@@ -59,7 +60,8 @@ public static class SettingsRules
     /// Keeps the schema keys of the given scope (any scope when null) whose values fit their type.
     /// Anything else is dropped rather than refused: the app and the plugin can be a version apart.
     /// </summary>
-    public static Dictionary<string, string?> FilterToSchema(SettingsSchema schema, IReadOnlyDictionary<string, string?>? values, string? scope)
+    public static Dictionary<string, string?> FilterToSchema(SettingsSchema schema, IReadOnlyDictionary<string, string?>? values, string? scope,
+                                                             bool keepUnknown = false)
     {
         var result = new Dictionary<string, string?>(StringComparer.Ordinal);
         if (values is null)
@@ -70,7 +72,17 @@ public static class SettingsRules
         foreach (var (key, value) in values)
         {
             var setting = schema.Find(key);
-            if (setting is null || (scope is not null && setting.Scope != scope))
+            if (setting is null)
+            {
+                if (keepUnknown)
+                {
+                    result[key] = value;
+                }
+
+                continue;
+            }
+
+            if (scope is not null && setting.Scope != scope)
             {
                 continue;
             }
@@ -269,7 +281,7 @@ public static class SettingsRules
             {
                 changed |= stored.Remove(key);
             }
-            else if (!stored.TryGetValue(key, out var old) || old != value)
+            else if (stored.TryGetValue(key, out var old) ? old != value : stored.Count < MaxStoredKeys)
             {
                 stored[key] = value;
                 changed = true;

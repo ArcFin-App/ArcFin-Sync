@@ -126,8 +126,10 @@ public class ArcfinSyncController : ControllerBase
     }
 
     /// <summary>
-    /// The 0.3.x save. Only synced Arcfin settings of the right type are kept; others are dropped
-    /// rather than refused, so an app a version ahead or behind still syncs the rest.
+    /// The 0.3.x save. Keys the schema doesn't know are still stored as 0.3.x did: released apps
+    /// sync offlineModeEnabled, which the schema leaves out, and dropping it while GET Settings
+    /// still returns the stored value would keep putting the old value back on those apps.
+    /// Device-only keys and values of the wrong type are dropped rather than refused.
     /// </summary>
     [HttpPut("Settings")]
     [Authorize]
@@ -147,7 +149,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        var values2 = SaveSynced(auth!, user, rules, values, replace: false);
+        var values2 = SaveSynced(auth!, user, rules, values, replace: false, keepUnknown: true);
 
         // 0.3.x answered a save without the Jellyfin username, so a forced seerrUsername comes
         // back with no value here; kept as it was for the apps that read this.
@@ -197,7 +199,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
-        var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false);
+        var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false, keepUnknown: false);
         return SyncState(user, rules, values);
     }
 
@@ -396,10 +398,10 @@ public class ArcfinSyncController : ControllerBase
 
     /// <summary>Saves synced values, stamping who changed them when something actually changed.</summary>
     private static Dictionary<string, string?> SaveSynced(AuthorizationInfo auth, User user, List<EffectiveRule> rules,
-                                                          IReadOnlyDictionary<string, string?> incoming, bool replace)
+                                                          IReadOnlyDictionary<string, string?> incoming, bool replace, bool keepUnknown)
     {
         var schema = SettingsSchema.Embedded;
-        var filtered = SettingsRules.FilterToSchema(schema, incoming, SettingsSchema.ScopeSynced);
+        var filtered = SettingsRules.FilterToSchema(schema, incoming, SettingsSchema.ScopeSynced, keepUnknown);
         var locked = SettingsRules.LockedKeys(rules);
         return SettingsStore.Current.WithUser(user.Id, files =>
         {
