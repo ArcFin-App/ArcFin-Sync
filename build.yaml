@@ -10,8 +10,12 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Added GET /ArcfinSync/Encoders: which video encoders (h264, hevc, av1) work with
-    the server's hardware acceleration setting, from a one-frame test encode per codec
-    with the server's own ffmpeg and device. Kept until the setting changes;
-    ?refresh=true tests again. Arcfin uses it to ask for AV1 only where the card
-    can encode it (a Pascal card, for one, has an AV1 encoder in ffmpeg but can't).
+  - Settings v2 (API version 2): the plugin carries Arcfin's settings catalogue and
+    serves it at GET /ArcfinSync/Schema; GET/PUT Sync with where each value comes
+    from and which device changed it last; a record of each user's Arcfin devices
+    (name, platform, app version, sync mode, settings) that users can rename and
+    forget; server-wide and per-user defaults and locks for administrators.
+  - One new configuration page with Overview, Settings, Users & Devices,
+    Notifications & Seerr and Advanced tabs.
+  - GET/PUT Settings are unchanged for released apps; 0.3 locks and defaults are
+    migrated and kept written so going back to 0.3.1 keeps them.
