@@ -74,4 +74,15 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.All(schema.Settings, s => Assert.Contains(s.Scope, new[] { "synced", "device" }));
         Assert.All(schema.Settings, s => Assert.False(string.IsNullOrEmpty(s.Title)));
     }
+
+    [Fact]
+    public void ADeviceShowsOnlySchemaSettings()
+    {
+        var record = new DeviceRecord { DeviceId = "d1" };
+        record.Settings["skipIntro"] = "true";
+        record.Settings["smartDownloadsIgnored"] = """{"s1":"Show"}""";
+        var dto = DeviceDto.From(record, null);
+        Assert.Equal("true", dto.Settings["skipIntro"]);
+        Assert.False(dto.Settings.ContainsKey("smartDownloadsIgnored"));
+    }
 }

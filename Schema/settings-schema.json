@@ -2480,45 +2480,6 @@
       ]
     },
     {
-      "key": "defaultExternalPlayer",
-      "type": "string",
-      "scope": "device",
-      "group": "playback",
-      "title": "Default Player",
-      "detail": "An app installed on this device; empty is Arcfin.",
-      "default": "",
-      "platforms": [
-        "iOS",
-        "macOS"
-      ]
-    },
-    {
-      "key": "smartDownloadsIgnored",
-      "type": "json",
-      "scope": "device",
-      "group": "downloads",
-      "title": "Ignored by Smart Downloads",
-      "detail": "Titles Smart Downloads leaves alone: an object of id to name.",
-      "format": "json",
-      "platforms": [
-        "iOS",
-        "macOS"
-      ]
-    },
-    {
-      "key": "smartDownloadsKeptShows",
-      "type": "json",
-      "scope": "device",
-      "group": "downloads",
-      "title": "Shows Kept Downloaded",
-      "detail": "An object of series id to its name and episode count.",
-      "format": "json",
-      "platforms": [
-        "iOS",
-        "macOS"
-      ]
-    },
-    {
       "key": "streamingServices",
       "type": "json",
       "scope": "device",

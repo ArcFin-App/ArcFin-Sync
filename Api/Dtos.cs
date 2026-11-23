@@ -105,7 +105,9 @@ public class DeviceDto
         SyncMode = record.SyncMode,
         LastSeen = record.LastSeen,
         IsCurrent = currentDeviceId is not null && string.Equals(record.DeviceId, currentDeviceId, StringComparison.Ordinal),
-        Settings = record.Settings
+        // Only what the schema still lists: a setting it dropped may be one that shouldn't be shown.
+        Settings = record.Settings.Where(s => SettingsSchema.Embedded.Find(s.Key) is not null)
+            .ToDictionary(s => s.Key, s => s.Value, StringComparer.Ordinal)
     };
 
     public static List<DeviceDto> List(Dictionary<string, DeviceRecord> devices, string? currentDeviceId)
