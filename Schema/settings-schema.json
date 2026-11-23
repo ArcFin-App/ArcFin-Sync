@@ -395,8 +395,7 @@
       "default": "true",
       "platforms": [
         "iOS",
-        "macOS",
-        "tvOS"
+        "macOS"
       ]
     },
     {
@@ -737,9 +736,7 @@
       "detail": "Shows the Cast button when a Chromecast is on your network.",
       "default": "true",
       "platforms": [
-        "iOS",
-        "macOS",
-        "tvOS"
+        "iOS"
       ]
     },
     {
@@ -764,7 +761,6 @@
       "default": "false",
       "platforms": [
         "iOS",
-        "macOS",
         "tvOS"
       ]
     },
@@ -1225,8 +1221,7 @@
       ],
       "platforms": [
         "iOS",
-        "macOS",
-        "tvOS"
+        "macOS"
       ]
     },
     {
