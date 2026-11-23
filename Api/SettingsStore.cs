@@ -3,134 +3,228 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using Jellyfin.Plugin.ArcfinSync.Configuration;
+using System.Text.Json.Serialization;
 
 namespace Jellyfin.Plugin.ArcfinSync.Api;
 
-public static class SettingsStore
+/// <summary>
+/// Per-user files in the plugin's data folder: users/{userId}.json (stored values, the 0.3.x
+/// format), users/{userId}.meta.json (who changed them last) and devices/{userId}.json.
+/// File names only ever come from a user ID (a Guid), never from client input.
+/// </summary>
+public sealed class SettingsStore
 {
     private static readonly object FileLock = new();
 
-    public static List<SyncedSettingDto> GetMergedSettings(Guid userId, string? jellyfinUsername = null)
+    private readonly string _root;
+
+    public SettingsStore(string root)
     {
-        var userValues = LoadUserSettings(userId);
-        var lockedSettings = Plugin.Instance!.Configuration.LockedSettings;
-
-        var result = new List<SyncedSettingDto>();
-        var seenKeys = new HashSet<string>();
-        LockedSetting? authMethodSetting = null;
-
-        foreach (var setting in lockedSettings)
-        {
-            // seerrUsername is never taken from admin config directly, see below — a single
-            // locked value would apply the same literal username to every user, which makes
-            // no sense (unlike seerrURL, which genuinely is one shared value for everyone).
-            if (setting.Key == "seerrUsername")
-            {
-                continue;
-            }
-
-            if (setting.Key == "seerrAuthMethod")
-            {
-                authMethodSetting = setting;
-            }
-
-            seenKeys.Add(setting.Key);
-            var value = setting.IsLocked
-                ? setting.PrefillValue
-                : (userValues.TryGetValue(setting.Key, out var storedValue) ? storedValue : setting.PrefillValue);
-            result.Add(new SyncedSettingDto { Key = setting.Key, Value = value, IsLocked = setting.IsLocked });
-        }
-
-        // seerrUsername's lock state is derived from Seerr Account Type instead: locked to
-        // "jellyfin" means every user's Seerr username IS their Jellyfin username, no admin
-        // choice involved, so it's forced. Locked to "local" (or not locked at all) means
-        // each user has their own separate Seerr account, so it stays per-user editable.
-        seenKeys.Add("seerrUsername");
-        if (IsLockedToJellyfinAccount(authMethodSetting))
-        {
-            result.Add(new SyncedSettingDto { Key = "seerrUsername", Value = jellyfinUsername, IsLocked = true });
-        }
-        else
-        {
-            var storedUsername = userValues.TryGetValue("seerrUsername", out var su) ? su : null;
-            result.Add(new SyncedSettingDto { Key = "seerrUsername", Value = storedUsername, IsLocked = false });
-        }
-
-        foreach (var kvp in userValues)
-        {
-            if (seenKeys.Contains(kvp.Key))
-            {
-                continue;
-            }
-
-            result.Add(new SyncedSettingDto
-            {
-                Key = kvp.Key,
-                Value = kvp.Value,
-                IsLocked = false
-            });
-        }
-
-        return result;
+        _root = root;
     }
 
-    public static void SaveUserSettings(Guid userId, Dictionary<string, string> values)
+    public static SettingsStore Current => new(Plugin.Instance!.DataFolderPath);
+
+    /// <summary>Runs a read-modify-write of one user's files under the store lock.</summary>
+    public T WithUser<T>(Guid userId, Func<UserFiles, T> body)
     {
-        var lockedKeys = Plugin.Instance!.Configuration.LockedSettings
-            .Where(s => s.IsLocked)
-            .Select(s => s.Key)
-            .ToHashSet();
-
-        var authMethodSetting = Plugin.Instance!.Configuration.LockedSettings
-            .FirstOrDefault(s => s.Key == "seerrAuthMethod");
-        if (IsLockedToJellyfinAccount(authMethodSetting))
-        {
-            lockedKeys.Add("seerrUsername");
-        }
-
-        var existing = LoadUserSettings(userId);
-
-        foreach (var kvp in values)
-        {
-            if (lockedKeys.Contains(kvp.Key))
-            {
-                continue;
-            }
-
-            existing[kvp.Key] = kvp.Value;
-        }
-
-        var path = GetUserFilePath(userId);
+        RequireUser(userId);
         lock (FileLock)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(existing));
+            var files = new UserFiles(this, userId);
+            var result = body(files);
+            files.Flush();
+            return result;
         }
     }
 
-    private static bool IsLockedToJellyfinAccount(LockedSetting? authMethodSetting)
+    public Dictionary<string, string?> LoadValues(Guid userId)
     {
-        return authMethodSetting is { IsLocked: true, PrefillValue: "jellyfin" };
+        RequireUser(userId);
+        lock (FileLock)
+        {
+            return Read<Dictionary<string, string?>>(ValuesPath(userId)) ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+        }
     }
 
-    private static Dictionary<string, string> LoadUserSettings(Guid userId)
+    /// <summary>
+    /// The user's stored synced values. Anything else in the file (0.3.x keys, settings the app
+    /// dropped, device-only keys) is removed from it on the way, once.
+    /// </summary>
+    public Dictionary<string, string?> LoadSyncedValues(Guid userId, SettingsSchema schema)
     {
-        var path = GetUserFilePath(userId);
+        return WithUser(userId, files =>
+        {
+            if (SettingsRules.PurgeToSchema(schema, files.Values))
+            {
+                files.ValuesChanged();
+            }
+
+            return new Dictionary<string, string?>(files.Values, StringComparer.Ordinal);
+        });
+    }
+
+    public Dictionary<string, DeviceRecord> LoadDevices(Guid userId)
+    {
+        RequireUser(userId);
+        lock (FileLock)
+        {
+            return Read<Dictionary<string, DeviceRecord>>(DevicesPath(userId)) ?? new Dictionary<string, DeviceRecord>(StringComparer.Ordinal);
+        }
+    }
+
+    public SyncMeta LoadMeta(Guid userId)
+    {
+        RequireUser(userId);
+        lock (FileLock)
+        {
+            return Read<SyncMeta>(MetaPath(userId)) ?? new SyncMeta();
+        }
+    }
+
+    /// <summary>How many device records there are across all users.</summary>
+    public int CountDevices()
+    {
+        var dir = Path.Combine(_root, "devices");
+        if (!Directory.Exists(dir))
+        {
+            return 0;
+        }
+
+        lock (FileLock)
+        {
+            return Directory.EnumerateFiles(dir, "*.json")
+                .Sum(f => Read<Dictionary<string, DeviceRecord>>(f)?.Count ?? 0);
+        }
+    }
+
+    private static void RequireUser(Guid userId)
+    {
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("No user.", nameof(userId));
+        }
+    }
+
+    private string ValuesPath(Guid userId) => Path.Combine(_root, "users", $"{userId}.json");
+
+    private string MetaPath(Guid userId) => Path.Combine(_root, "users", $"{userId}.meta.json");
+
+    private string DevicesPath(Guid userId) => Path.Combine(_root, "devices", $"{userId}.json");
+
+    private static T? Read<T>(string path)
+        where T : class
+    {
         if (!File.Exists(path))
         {
-            return new Dictionary<string, string>();
+            return null;
         }
 
-        lock (FileLock)
-        {
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new Dictionary<string, string>();
-        }
+        return JsonSerializer.Deserialize<T>(File.ReadAllText(path));
     }
 
-    private static string GetUserFilePath(Guid userId)
+    /// <summary>Writes beside the target, then moves over it, so a reader never sees half a file.</summary>
+    private static void WriteAtomic(string path, object value)
     {
-        return Path.Combine(Plugin.Instance!.DataFolderPath, "users", $"{userId}.json");
+        var dir = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(dir);
+        var temp = Path.Combine(dir, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            File.WriteAllText(temp, JsonSerializer.Serialize(value));
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temp))
+            {
+                File.Delete(temp);
+            }
+        }
     }
+
+    public sealed class UserFiles
+    {
+        private readonly SettingsStore _store;
+        private readonly Guid _userId;
+        private Dictionary<string, string?>? _values;
+        private Dictionary<string, DeviceRecord>? _devices;
+        private SyncMeta? _meta;
+        private bool _valuesDirty;
+        private bool _devicesDirty;
+        private bool _metaDirty;
+
+        internal UserFiles(SettingsStore store, Guid userId)
+        {
+            _store = store;
+            _userId = userId;
+        }
+
+        public Dictionary<string, string?> Values => _values ??= Read<Dictionary<string, string?>>(_store.ValuesPath(_userId))
+                                                                  ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        public Dictionary<string, DeviceRecord> Devices => _devices ??= Read<Dictionary<string, DeviceRecord>>(_store.DevicesPath(_userId))
+                                                                         ?? new Dictionary<string, DeviceRecord>(StringComparer.Ordinal);
+
+        public SyncMeta Meta => _meta ??= Read<SyncMeta>(_store.MetaPath(_userId)) ?? new SyncMeta();
+
+        public void ValuesChanged() => _valuesDirty = true;
+
+        public void DevicesChanged() => _devicesDirty = true;
+
+        public void MetaChanged() => _metaDirty = true;
+
+        internal void Flush()
+        {
+            if (_valuesDirty)
+            {
+                WriteAtomic(_store.ValuesPath(_userId), Values);
+            }
+
+            if (_devicesDirty)
+            {
+                WriteAtomic(_store.DevicesPath(_userId), Devices);
+            }
+
+            if (_metaDirty)
+            {
+                WriteAtomic(_store.MetaPath(_userId), Meta);
+            }
+        }
+    }
+}
+
+public sealed class DeviceRecord
+{
+    public string DeviceId { get; set; } = string.Empty;
+
+    public string? CustomName { get; set; }
+
+    public string JellyfinDeviceName { get; set; } = string.Empty;
+
+    public string Platform { get; set; } = string.Empty;
+
+    public string? Model { get; set; }
+
+    public string? AppVersion { get; set; }
+
+    public string SyncMode { get; set; } = "automatic";
+
+    public DateTime FirstSeen { get; set; }
+
+    public DateTime LastSeen { get; set; }
+
+    public Dictionary<string, string?> Settings { get; set; } = new(StringComparer.Ordinal);
+
+    [JsonIgnore]
+    public string DisplayName => string.IsNullOrEmpty(CustomName) ? JellyfinDeviceName : CustomName;
+}
+
+public sealed class SyncMeta
+{
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? UpdatedByDeviceId { get; set; }
+
+    public string? UpdatedByDeviceName { get; set; }
 }

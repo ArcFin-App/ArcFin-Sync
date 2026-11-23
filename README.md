@@ -1,20 +1,23 @@
 # Arcfin Sync
 
-![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
-A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/Arcfin-iOS). Installs on your Jellyfin server and syncs Arcfin app settings across a user's devices, gives the admin control over which settings can be changed, and adds notification support (new media, admin broadcasts, Seerr request availability) that Jellyfin doesn't have on its own.
+A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). Installs on your Jellyfin server, keeps each user's Arcfin settings in step across their devices, and lets the server's administrators set defaults and locks for those settings.
 
 ## What it does
 
-- Syncs Arcfin app settings between a user's devices. Cross-platform settings (playback defaults, subtitle preferences, and similar) sync everywhere. Platform-specific settings (macOS window behavior, tvOS focus and UI preferences, and similar) stay on that platform only and never sync across.
-- Gives the admin a settings page in the Jellyfin dashboard to lock, unlock, or prefill any setting, for one user or all users.
-- Advanced YAML override section for admins who want to set config outside the UI.
-- Sends notifications to Arcfin clients: new media added, admin-authored announcements, and Seerr request-available alerts via webhook.
+- **Settings catalogue.** Carries the same list of Arcfin settings as the app (key, type, title, default, choices, which platforms show it) and serves it to signed-in users. Only settings in the catalogue are stored.
+- **Settings sync.** Keeps a user's synced settings in step across their iPhone, iPad, Mac and Apple TV, and remembers which device changed them last, so Arcfin can sync automatically, ask first, or not sync on a device. A device can send its settings to the user's other devices.
+- **Devices.** Keeps a record of each device a user signs in to with Arcfin (name, platform, app version, sync mode, last seen, its settings). Users can rename or forget their devices; administrators can for anyone.
+- **Defaults and locks.** Administrators give any setting a default (used until someone picks their own) or lock it (everyone gets that value and can't change it), for everyone or for one user. A per-user override can also unlock a setting for that person.
+- **Configuration page.** One page in the Jellyfin dashboard with Overview, Settings and Users & Devices tabs.
+- **Audio tracks for downloads.** Copies one audio track of an item out as AAC in an .m4a with the server's ffmpeg, so a converted download can keep more than one audio track.
+- **Encoder check.** Reports which video encoders (H.264, HEVC, AV1) really work with the server's hardware acceleration, from a one-frame test encode per codec.
 
 ## Status
 
-v0.2.0 in development. Installable via the repository manifest (manifest.json) once the release is published on Gitea.
+v0.4.0, for Arcfin 0.5.0. Install it from the repository manifest below.
 
 ## Requirements
 
@@ -37,11 +40,11 @@ Arcfin Sync will show up in Dashboard > Plugins > Catalog once a release is publ
 dotnet build
 ```
 
-Output goes to `bin/Debug/net10.0/Jellyfin.Plugin.ArcfinSync.dll`. Copy it into your Jellyfin server's plugin directory and restart the server to load it.
+Output goes to `bin/Debug/net10.0/Jellyfin.Plugin.ArcfinSync.dll`. Tests are in `tests/` (`dotnet test tests/Jellyfin.Plugin.ArcfinSync.Tests`). Copy it into your Jellyfin server's plugin directory and restart the server to load it.
 
 ## Related
 
-- [Arcfin](https://git.psmattas.com/ArcFin/Arcfin-iOS): the client app this plugin serves.
+- [Arcfin](https://git.psmattas.com/ArcFin/ArcFin): the client app this plugin serves.
 
 ## License
 

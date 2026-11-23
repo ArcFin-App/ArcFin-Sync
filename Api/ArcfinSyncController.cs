@@ -8,6 +8,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Controller.Net;
+using Jellyfin.Database.Implementations.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -104,7 +105,9 @@ public class ArcfinSyncController : ControllerBase
         return new StatusDto
         {
             Installed = true,
-            Version = Plugin.Instance!.Version.ToString()
+            Version = Plugin.Instance!.Version.ToString(),
+            ApiVersion = 2,
+            Features = new List<string> { "schema", "devices", "policy", "syncMeta" }
         };
     }
 
@@ -112,43 +115,336 @@ public class ArcfinSyncController : ControllerBase
     [Authorize]
     public async Task<ActionResult<List<SyncedSettingDto>>> GetSettings()
     {
-        var auth = await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false);
-        if (!auth.IsAuthenticated)
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
         {
-            return Unauthorized();
+            return error;
         }
 
-        var username = _userManager.GetUserById(auth.UserId)?.Username;
-        return Ok(SettingsStore.GetMergedSettings(auth.UserId, username));
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        return Ok(SettingsRules.LegacyMerge(rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded), user.Username));
     }
 
+    /// <summary>
+    /// The 0.3.x save. Only synced Arcfin settings of the right type are kept; others are dropped
+    /// rather than refused, so an app a version ahead or behind still syncs the rest.
+    /// </summary>
     [HttpPut("Settings")]
     [Authorize]
-    public async Task<ActionResult<List<SyncedSettingDto>>> PutSettings([FromBody] Dictionary<string, string> values)
+    [RequestSizeLimit(MaxBodyBytes)]
+    public async Task<ActionResult<List<SyncedSettingDto>>> PutSettings([FromBody] Dictionary<string, string?> values)
     {
-        var auth = await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false);
-        if (!auth.IsAuthenticated)
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
         {
-            return Unauthorized();
+            return error;
         }
 
-        SettingsStore.SaveUserSettings(auth.UserId, values);
-        return Ok(SettingsStore.GetMergedSettings(auth.UserId));
+        var tooBig = SettingsRules.CheckPayload(values);
+        if (tooBig is not null)
+        {
+            return BadRequest(tooBig);
+        }
+
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var values2 = SaveSynced(auth!, user, rules, values, replace: false);
+
+        // 0.3.x answered a save without the Jellyfin username, so a forced seerrUsername comes
+        // back with no value here; kept as it was for the apps that read this.
+        return Ok(SettingsRules.LegacyMerge(rules, values2, null));
     }
-}
 
-public class StatusDto
-{
-    public bool Installed { get; set; }
+    [HttpGet("Schema")]
+    [Authorize]
+    public ActionResult GetSchema()
+    {
+        return Content(SettingsSchema.Embedded.Json, "application/json");
+    }
 
-    public string Version { get; set; } = string.Empty;
-}
+    [HttpGet("Sync")]
+    [Authorize]
+    public async Task<ActionResult<SyncStateDto>> GetSync()
+    {
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
 
-public class SyncedSettingDto
-{
-    public string Key { get; set; } = string.Empty;
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        return SyncState(user, rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded));
+    }
 
-    public string? Value { get; set; }
+    /// <summary>
+    /// Saves synced values. With Replace, this device's settings become everyone's: each unlocked
+    /// synced setting its platform shows that it didn't send goes back to its default. The
+    /// platform comes from this device's record (PUT Devices/Current); without one, Replace
+    /// clears nothing.
+    /// </summary>
+    [HttpPut("Sync")]
+    [Authorize]
+    [RequestSizeLimit(MaxBodyBytes)]
+    public async Task<ActionResult<SyncStateDto>> PutSync([FromBody] SyncPutBody body)
+    {
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
 
-    public bool IsLocked { get; set; }
+        var tooBig = SettingsRules.CheckPayload(body?.Values);
+        if (tooBig is not null)
+        {
+            return BadRequest(tooBig);
+        }
+
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false);
+        return SyncState(user, rules, values);
+    }
+
+    [HttpGet("Devices")]
+    [Authorize]
+    public async Task<ActionResult<List<DeviceDto>>> GetDevices()
+    {
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        return DeviceDto.List(SettingsStore.Current.LoadDevices(user!.Id), auth!.DeviceId);
+    }
+
+    /// <summary>
+    /// Records the calling device: its ID and Jellyfin device name come from the sign-in, never
+    /// from the body. A name in the body is only taken when the device has no name of its own yet,
+    /// or with RenameCurrent.
+    /// </summary>
+    [HttpPut("Devices/Current")]
+    [Authorize]
+    [RequestSizeLimit(MaxBodyBytes)]
+    public async Task<ActionResult<DeviceDto>> PutCurrentDevice([FromBody] CurrentDeviceBody body)
+    {
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        var deviceId = auth!.DeviceId;
+        if (string.IsNullOrEmpty(deviceId) || deviceId.Length > SettingsRules.MaxDeviceIdLength)
+        {
+            return BadRequest("This sign-in has no usable device ID.");
+        }
+
+        body ??= new CurrentDeviceBody();
+        if (body.Platform is not null && !SettingsRules.Platforms.Contains(body.Platform))
+        {
+            return BadRequest("Platform must be iOS, iPadOS, macOS or tvOS.");
+        }
+
+        if (body.SyncMode is not null && !SettingsRules.SyncModes.Contains(body.SyncMode))
+        {
+            return BadRequest("SyncMode must be automatic, ask or off.");
+        }
+
+        if (!SettingsRules.IsCleanField(body.Model) || !SettingsRules.IsCleanField(body.AppVersion))
+        {
+            return BadRequest("Model and AppVersion must be short plain text.");
+        }
+
+        var (name, nameError) = SettingsRules.CleanName(body.Name);
+        if (nameError is not null)
+        {
+            return BadRequest(nameError);
+        }
+
+        var tooBig = SettingsRules.CheckPayload(body.Settings);
+        if (tooBig is not null)
+        {
+            return BadRequest(tooBig);
+        }
+
+        var snapshot = body.Settings is null
+            ? null
+            : SettingsRules.FilterToSchema(SettingsSchema.Embedded, SettingsRules.WithinLimits(body.Settings), null);
+        var jellyfinName = Truncate(auth.Device ?? string.Empty, SettingsRules.MaxFieldLength);
+        var now = DateTime.UtcNow;
+
+        var record = SettingsStore.Current.WithUser(user!.Id, files =>
+        {
+            var devices = files.Devices;
+            if (!devices.TryGetValue(deviceId, out var device))
+            {
+                while (devices.Count >= SettingsRules.MaxDevicesPerUser)
+                {
+                    devices.Remove(devices.Values.OrderBy(d => d.LastSeen).First().DeviceId);
+                }
+
+                device = new DeviceRecord { DeviceId = deviceId, FirstSeen = now, SyncMode = "automatic" };
+                devices[deviceId] = device;
+            }
+
+            device.JellyfinDeviceName = jellyfinName;
+            device.LastSeen = now;
+            device.Platform = body.Platform ?? device.Platform;
+            device.Model = body.Model ?? device.Model;
+            device.AppVersion = body.AppVersion ?? device.AppVersion;
+            device.SyncMode = body.SyncMode ?? device.SyncMode;
+            if (snapshot is not null)
+            {
+                device.Settings = snapshot;
+            }
+
+            if (!string.IsNullOrEmpty(name) && (string.IsNullOrEmpty(device.CustomName) || body.RenameCurrent))
+            {
+                device.CustomName = name == jellyfinName ? null : name;
+            }
+
+            files.DevicesChanged();
+            return device;
+        });
+
+        return DeviceDto.From(record, deviceId);
+    }
+
+    [HttpPut("Devices/{deviceId}/Name")]
+    [Authorize]
+    public async Task<ActionResult<DeviceDto>> RenameDevice([FromRoute] string deviceId, [FromBody] DeviceNameBody body)
+    {
+        var (auth, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        return Rename(user!.Id, deviceId, body, auth!.DeviceId);
+    }
+
+    [HttpDelete("Devices/{deviceId}")]
+    [Authorize]
+    public async Task<ActionResult> ForgetDevice([FromRoute] string deviceId)
+    {
+        var (_, user, error) = await GetCallerAsync().ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        return Forget(user!.Id, deviceId);
+    }
+
+    internal const long MaxBodyBytes = 4 * 1024 * 1024;
+
+    internal static ActionResult<DeviceDto> RenameIn(ControllerBase controller, Guid userId, string deviceId, DeviceNameBody? body, string? currentDeviceId)
+    {
+        var (name, nameError) = SettingsRules.CleanName(body?.Name);
+        if (nameError is not null)
+        {
+            return controller.BadRequest(nameError);
+        }
+
+        var record = SettingsStore.Current.WithUser(userId, files =>
+        {
+            if (!files.Devices.TryGetValue(deviceId, out var device))
+            {
+                return null;
+            }
+
+            device.CustomName = string.IsNullOrEmpty(name) || name == device.JellyfinDeviceName ? null : name;
+            files.DevicesChanged();
+            return device;
+        });
+
+        return record is null ? controller.NotFound() : DeviceDto.From(record, currentDeviceId);
+    }
+
+    internal static ActionResult ForgetIn(ControllerBase controller, Guid userId, string deviceId)
+    {
+        var removed = SettingsStore.Current.WithUser(userId, files =>
+        {
+            if (!files.Devices.Remove(deviceId))
+            {
+                return false;
+            }
+
+            files.DevicesChanged();
+            return true;
+        });
+
+        return removed ? controller.NoContent() : controller.NotFound();
+    }
+
+    private ActionResult<DeviceDto> Rename(Guid userId, string deviceId, DeviceNameBody body, string? current) => RenameIn(this, userId, deviceId, body, current);
+
+    private ActionResult Forget(Guid userId, string deviceId) => ForgetIn(this, userId, deviceId);
+
+    private static string Truncate(string value, int max) => value.Length <= max ? value : value[..max];
+
+    /// <summary>
+    /// The signed-in user behind this request. API keys and tokens without a user are refused:
+    /// these endpoints are about one person's settings.
+    /// </summary>
+    private async Task<(AuthorizationInfo? Auth, User? User, ActionResult? Error)> GetCallerAsync()
+    {
+        var auth = await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false);
+        if (!auth.IsAuthenticated || auth.UserId == Guid.Empty)
+        {
+            return (null, null, Unauthorized());
+        }
+
+        var user = _userManager.GetUserById(auth.UserId);
+        return user is null ? (null, null, Unauthorized()) : (auth, user, null);
+    }
+
+    /// <summary>Saves synced values, stamping who changed them when something actually changed.</summary>
+    private static Dictionary<string, string?> SaveSynced(AuthorizationInfo auth, User user, List<EffectiveRule> rules,
+                                                          IReadOnlyDictionary<string, string?> incoming, bool replace)
+    {
+        var schema = SettingsSchema.Embedded;
+        var filtered = SettingsRules.FilterToSchema(schema, SettingsRules.WithinLimits(incoming), SettingsSchema.ScopeSynced);
+        var locked = SettingsRules.LockedKeys(rules);
+        return SettingsStore.Current.WithUser(user.Id, files =>
+        {
+            var values = files.Values;
+            if (SettingsRules.PurgeToSchema(schema, values))
+            {
+                files.ValuesChanged();
+            }
+
+            var deviceId = string.IsNullOrEmpty(auth.DeviceId) || auth.DeviceId.Length > SettingsRules.MaxDeviceIdLength ? null : auth.DeviceId;
+            var device = deviceId is not null && files.Devices.TryGetValue(deviceId, out var record) ? record : null;
+            if (SettingsRules.Apply(schema, values, filtered, locked, replace, device?.Platform, incoming.Keys))
+            {
+                files.ValuesChanged();
+                var deviceName = device?.DisplayName ?? auth.Device;
+                files.Meta.UpdatedAt = DateTime.UtcNow;
+                files.Meta.UpdatedByDeviceId = deviceId;
+                files.Meta.UpdatedByDeviceName = deviceName is null ? null : Truncate(deviceName, SettingsRules.MaxFieldLength);
+                files.MetaChanged();
+            }
+
+            return new Dictionary<string, string?>(values, StringComparer.Ordinal);
+        });
+    }
+
+    private static SyncStateDto SyncState(User user, List<EffectiveRule> rules, Dictionary<string, string?> values)
+    {
+        var store = SettingsStore.Current;
+        var meta = store.LoadMeta(user.Id);
+        var name = meta.UpdatedByDeviceName;
+        if (meta.UpdatedByDeviceId is not null && store.LoadDevices(user.Id).TryGetValue(meta.UpdatedByDeviceId, out var device))
+        {
+            name = device.DisplayName;
+        }
+
+        return new SyncStateDto
+        {
+            Settings = SettingsRules.SyncMerge(SettingsSchema.Embedded, rules, values, user.Username),
+            UpdatedAt = meta.UpdatedAt,
+            UpdatedByDeviceId = meta.UpdatedByDeviceId,
+            UpdatedByDeviceName = name
+        };
+    }
 }

@@ -1,0 +1,2657 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "playback",
+      "title": "Playback"
+    },
+    {
+      "id": "playerFeatures",
+      "title": "Player Features"
+    },
+    {
+      "id": "subtitles",
+      "title": "Subtitle Style"
+    },
+    {
+      "id": "codecs",
+      "title": "Codec Compatibility"
+    },
+    {
+      "id": "music",
+      "title": "Music"
+    },
+    {
+      "id": "downloads",
+      "title": "Downloads"
+    },
+    {
+      "id": "appearance",
+      "title": "Appearance"
+    },
+    {
+      "id": "notifications",
+      "title": "Notifications"
+    },
+    {
+      "id": "library",
+      "title": "Library"
+    },
+    {
+      "id": "navigation",
+      "title": "Navigation"
+    },
+    {
+      "id": "integrations",
+      "title": "Integrations"
+    },
+    {
+      "id": "profiles",
+      "title": "Profiles"
+    },
+    {
+      "id": "sync",
+      "title": "Devices & Sync"
+    }
+  ],
+  "settings": [
+    {
+      "key": "videoQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Video Quality",
+      "detail": "Auto picks from your connection; a fixed choice caps every stream.",
+      "default": "Max",
+      "options": [
+        {
+          "value": "Max",
+          "title": "Max Quality"
+        },
+        {
+          "value": "auto",
+          "title": "Auto (Recommended)"
+        },
+        {
+          "value": "4K",
+          "title": "4K Ultra HD"
+        },
+        {
+          "value": "1080p",
+          "title": "1080p HD"
+        },
+        {
+          "value": "720p",
+          "title": "720p"
+        },
+        {
+          "value": "480p",
+          "title": "480p"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "mobileVideoQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Quality on Mobile Data",
+      "detail": "Used instead when you're on mobile data.",
+      "default": "",
+      "options": [
+        {
+          "value": "",
+          "title": "Same as Wi-Fi"
+        },
+        {
+          "value": "Max",
+          "title": "Max Quality"
+        },
+        {
+          "value": "auto",
+          "title": "Auto (Recommended)"
+        },
+        {
+          "value": "4K",
+          "title": "4K Ultra HD"
+        },
+        {
+          "value": "1080p",
+          "title": "1080p HD"
+        },
+        {
+          "value": "720p",
+          "title": "720p"
+        },
+        {
+          "value": "480p",
+          "title": "480p"
+        }
+      ],
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "playbackEngine",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Playback Engine",
+      "default": "Auto",
+      "options": [
+        {
+          "value": "Auto",
+          "title": "Auto"
+        },
+        {
+          "value": "Aether",
+          "title": "Aether"
+        },
+        {
+          "value": "AVFoundation",
+          "title": "AVFoundation"
+        },
+        {
+          "value": "VLC",
+          "title": "VLC"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "trailersEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Trailers",
+      "detail": "Shows Play Trailer when the server has a trailer.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "youtubeTrailersEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "YouTube Fallback",
+      "detail": "Plays a YouTube trailer when the server has none.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "skipForwardSeconds",
+      "type": "int",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Forward",
+      "detail": "For the skip buttons, double-tap and the arrow keys.",
+      "default": "10",
+      "options": [
+        {
+          "value": "5",
+          "title": "5 seconds"
+        },
+        {
+          "value": "10",
+          "title": "10 seconds"
+        },
+        {
+          "value": "15",
+          "title": "15 seconds"
+        },
+        {
+          "value": "30",
+          "title": "30 seconds"
+        },
+        {
+          "value": "45",
+          "title": "45 seconds"
+        },
+        {
+          "value": "60",
+          "title": "60 seconds"
+        }
+      ],
+      "min": 5,
+      "max": 60,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "skipBackwardSeconds",
+      "type": "int",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Backward",
+      "detail": "For the skip buttons, double-tap and the arrow keys.",
+      "default": "10",
+      "options": [
+        {
+          "value": "5",
+          "title": "5 seconds"
+        },
+        {
+          "value": "10",
+          "title": "10 seconds"
+        },
+        {
+          "value": "15",
+          "title": "15 seconds"
+        },
+        {
+          "value": "30",
+          "title": "30 seconds"
+        },
+        {
+          "value": "45",
+          "title": "45 seconds"
+        },
+        {
+          "value": "60",
+          "title": "60 seconds"
+        }
+      ],
+      "min": 5,
+      "max": 60,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "autoPlayNext",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Auto-play Next Episode",
+      "detail": "Starts the next episode when the credits roll.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "skipRecap",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Recap Automatically",
+      "detail": "Skips a recap when the server knows where it is.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "skipIntro",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Intro Automatically",
+      "detail": "Skips the intro when the server knows where it is.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "skipCredits",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Credits Automatically",
+      "detail": "Skips the credits, or moves on to what's next.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "skipCommercials",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Skip Ads Automatically",
+      "detail": "Skips ad breaks in recordings when the server knows where they are.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "upNextCountdownSeconds",
+      "type": "int",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Countdown",
+      "detail": "How long the button fills before an automatic skip or the next episode.",
+      "default": "5",
+      "options": [
+        {
+          "value": "3",
+          "title": "3 seconds"
+        },
+        {
+          "value": "4",
+          "title": "4 seconds"
+        },
+        {
+          "value": "5",
+          "title": "5 seconds"
+        }
+      ],
+      "min": 3,
+      "max": 5,
+      "step": 1,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitleDefault",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Show Subtitles by Default",
+      "detail": "Turns on a subtitle track when a video starts.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitlesWhenMuted",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Show Subtitles When Muted",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "rememberPlaybackSpeed",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Remember Playback Speed",
+      "detail": "New videos start at the speed you last picked.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "resumeBehavior",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "When Resuming",
+      "detail": "What Play does for a title you've started.",
+      "default": "resume",
+      "options": [
+        {
+          "value": "ask",
+          "title": "Ask"
+        },
+        {
+          "value": "resume",
+          "title": "Resume"
+        },
+        {
+          "value": "startOver",
+          "title": "Start Over"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "markWatchedAt",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Mark as Watched",
+      "detail": "When closing the player counts a title as watched.",
+      "default": "server",
+      "options": [
+        {
+          "value": "server",
+          "title": "Server Default"
+        },
+        {
+          "value": "credits",
+          "title": "When Credits Start"
+        },
+        {
+          "value": "eighty",
+          "title": "At 80%"
+        },
+        {
+          "value": "eightyFive",
+          "title": "At 85%"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "preferredAudioLanguage",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Preferred Audio Language",
+      "detail": "Starts on this language when a title has it.",
+      "default": "",
+      "options": [
+        {
+          "value": "",
+          "title": "None"
+        },
+        {
+          "value": "eng",
+          "title": "English"
+        },
+        {
+          "value": "spa",
+          "title": "Spanish"
+        },
+        {
+          "value": "fre",
+          "title": "French"
+        },
+        {
+          "value": "ger",
+          "title": "German"
+        },
+        {
+          "value": "jpn",
+          "title": "Japanese"
+        },
+        {
+          "value": "kor",
+          "title": "Korean"
+        },
+        {
+          "value": "chi",
+          "title": "Chinese"
+        },
+        {
+          "value": "ita",
+          "title": "Italian"
+        },
+        {
+          "value": "por",
+          "title": "Portuguese"
+        },
+        {
+          "value": "rus",
+          "title": "Russian"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "preferredSubtitleLanguage",
+      "type": "string",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Preferred Subtitle Language",
+      "detail": "Starts on this language when a title has it.",
+      "default": "",
+      "options": [
+        {
+          "value": "",
+          "title": "Off"
+        },
+        {
+          "value": "eng",
+          "title": "English"
+        },
+        {
+          "value": "spa",
+          "title": "Spanish"
+        },
+        {
+          "value": "fre",
+          "title": "French"
+        },
+        {
+          "value": "ger",
+          "title": "German"
+        },
+        {
+          "value": "jpn",
+          "title": "Japanese"
+        },
+        {
+          "value": "kor",
+          "title": "Korean"
+        },
+        {
+          "value": "chi",
+          "title": "Chinese"
+        },
+        {
+          "value": "ita",
+          "title": "Italian"
+        },
+        {
+          "value": "por",
+          "title": "Portuguese"
+        },
+        {
+          "value": "rus",
+          "title": "Russian"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "rememberTracksPerShow",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Remember Tracks Per Show",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "raiseQuietAudio",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Raise Quiet Audio",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "animationUpscaling",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Animation Upscaling",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitleReachLater",
+      "type": "int",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Subtitle Timing: Later",
+      "detail": "How far Subtitle Timing can move picture subtitles later.",
+      "default": "60",
+      "options": [
+        {
+          "value": "60",
+          "title": "1 minute"
+        },
+        {
+          "value": "120",
+          "title": "2 minutes"
+        },
+        {
+          "value": "300",
+          "title": "5 minutes"
+        },
+        {
+          "value": "600",
+          "title": "10 minutes"
+        }
+      ],
+      "min": 60,
+      "max": 600,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitleReachEarlier",
+      "type": "int",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Subtitle Timing: Earlier",
+      "detail": "How far it can move them earlier.",
+      "default": "60",
+      "options": [
+        {
+          "value": "60",
+          "title": "1 minute"
+        },
+        {
+          "value": "120",
+          "title": "2 minutes"
+        },
+        {
+          "value": "300",
+          "title": "5 minutes"
+        },
+        {
+          "value": "600",
+          "title": "10 minutes"
+        }
+      ],
+      "min": 60,
+      "max": 600,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "chapterListEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Chapter List",
+      "detail": "A button in the player to jump between chapters, when the title has them.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "syncPlayEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "SyncPlay",
+      "detail": "Create or join a group that keeps playback in sync with others.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "castEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Chromecast",
+      "detail": "Shows the Cast button when a Chromecast is on your network.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "stillWatchingPromptEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "\"Are You Still Watching?\" Prompt",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "matchContentFrameRate",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Match Content Frame Rate",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "autoPictureInPicture",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Picture in Picture When Leaving",
+      "detail": "Keeps the video playing in a small window when you go Home.",
+      "default": "false",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "swipeGesturesEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Swipe Gestures",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "ignoreEdgeSwipes",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Ignore Swipes Near Edges",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "playerOpeningOrientation",
+      "type": "string",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Open Videos In",
+      "detail": "The rotate button in the player still turns it either way.",
+      "default": "followDevice",
+      "options": [
+        {
+          "value": "followDevice",
+          "title": "Follow Device"
+        },
+        {
+          "value": "landscape",
+          "title": "Landscape"
+        },
+        {
+          "value": "portrait",
+          "title": "Portrait"
+        }
+      ],
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "doubleTapToSkip",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playerFeatures",
+      "title": "Double-Tap to Skip",
+      "detail": "Double-tap a side of the video to skip back or forward.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "subtitleTextSize",
+      "type": "string",
+      "scope": "synced",
+      "group": "subtitles",
+      "title": "Size",
+      "default": "medium",
+      "options": [
+        {
+          "value": "small",
+          "title": "Small"
+        },
+        {
+          "value": "medium",
+          "title": "Medium"
+        },
+        {
+          "value": "large",
+          "title": "Large"
+        },
+        {
+          "value": "extraLarge",
+          "title": "Extra Large"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitleTextColor",
+      "type": "string",
+      "scope": "synced",
+      "group": "subtitles",
+      "title": "Colour",
+      "default": "white",
+      "options": [
+        {
+          "value": "white",
+          "title": "White"
+        },
+        {
+          "value": "yellow",
+          "title": "Yellow"
+        },
+        {
+          "value": "cyan",
+          "title": "Cyan"
+        },
+        {
+          "value": "green",
+          "title": "Green"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "subtitleBackgroundStyle",
+      "type": "string",
+      "scope": "synced",
+      "group": "subtitles",
+      "title": "Background",
+      "default": "outline",
+      "options": [
+        {
+          "value": "box",
+          "title": "Box"
+        },
+        {
+          "value": "outline",
+          "title": "Outline"
+        },
+        {
+          "value": "none",
+          "title": "None"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecAllowHEVCDirectPlay",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Direct Play HEVC (H.265)",
+      "detail": "Turn off if HEVC videos stall or stay black on this device; they'll be converted to H.264 instead.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecAllowAV1Transcode",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Convert to AV1",
+      "detail": "Only shown where the device decodes AV1 in hardware.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecAllowSurroundAudioDirectPlay",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Direct Play Surround Audio (AC3/EAC3/DTS)",
+      "detail": "Only for audio always going to a receiver over AirPlay or HDMI.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecForceHDRTranscode",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Force HDR to Transcode",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecForceDolbyVisionTranscode",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Force Dolby Vision to Transcode",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "codecCompatibilityMode",
+      "type": "bool",
+      "scope": "device",
+      "group": "codecs",
+      "title": "Compatibility Mode",
+      "detail": "For videos that won't play at all. The server converts anything that isn't H.264 and AAC.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicCrossfadeSeconds",
+      "type": "int",
+      "scope": "synced",
+      "group": "music",
+      "title": "Crossfade",
+      "default": "0",
+      "options": [
+        {
+          "value": "0",
+          "title": "Off"
+        },
+        {
+          "value": "1",
+          "title": "1 second"
+        },
+        {
+          "value": "2",
+          "title": "2 seconds"
+        },
+        {
+          "value": "3",
+          "title": "3 seconds"
+        },
+        {
+          "value": "4",
+          "title": "4 seconds"
+        },
+        {
+          "value": "5",
+          "title": "5 seconds"
+        },
+        {
+          "value": "6",
+          "title": "6 seconds"
+        },
+        {
+          "value": "8",
+          "title": "8 seconds"
+        },
+        {
+          "value": "10",
+          "title": "10 seconds"
+        },
+        {
+          "value": "12",
+          "title": "12 seconds"
+        }
+      ],
+      "min": 0,
+      "max": 12,
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicSoundCheck",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Sound Check",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicEqualizer",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Equalizer",
+      "default": "off",
+      "options": [
+        {
+          "value": "off",
+          "title": "Off"
+        },
+        {
+          "value": "bassBooster",
+          "title": "Bass Booster"
+        },
+        {
+          "value": "bassReducer",
+          "title": "Bass Reducer"
+        },
+        {
+          "value": "trebleBooster",
+          "title": "Treble Booster"
+        },
+        {
+          "value": "trebleReducer",
+          "title": "Treble Reducer"
+        },
+        {
+          "value": "vocalBooster",
+          "title": "Vocal Booster"
+        },
+        {
+          "value": "loudness",
+          "title": "Loudness"
+        },
+        {
+          "value": "smallSpeakers",
+          "title": "Small Speakers"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicAutoplay",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Autoplay",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicRememberQueue",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Remember What's Playing",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicStreamQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Streaming Quality",
+      "default": "original",
+      "options": [
+        {
+          "value": "original",
+          "title": "Original"
+        },
+        {
+          "value": "320",
+          "title": "320 kbps"
+        },
+        {
+          "value": "256",
+          "title": "256 kbps"
+        },
+        {
+          "value": "192",
+          "title": "192 kbps"
+        },
+        {
+          "value": "128",
+          "title": "128 kbps"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicMobileStreamQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Quality on Mobile Data",
+      "default": "",
+      "options": [
+        {
+          "value": "",
+          "title": "Same as Wi-Fi"
+        },
+        {
+          "value": "original",
+          "title": "Original"
+        },
+        {
+          "value": "320",
+          "title": "320 kbps"
+        },
+        {
+          "value": "256",
+          "title": "256 kbps"
+        },
+        {
+          "value": "192",
+          "title": "192 kbps"
+        },
+        {
+          "value": "128",
+          "title": "128 kbps"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicDownloadQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Download Quality",
+      "default": "original",
+      "options": [
+        {
+          "value": "original",
+          "title": "Original"
+        },
+        {
+          "value": "320",
+          "title": "320 kbps"
+        },
+        {
+          "value": "256",
+          "title": "256 kbps"
+        },
+        {
+          "value": "192",
+          "title": "192 kbps"
+        },
+        {
+          "value": "128",
+          "title": "128 kbps"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicDownloadOnMobileData",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Download on Mobile Data",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicKeepFavoritesDownloaded",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Keep Favorites Downloaded",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicKeepRecentCount",
+      "type": "int",
+      "scope": "synced",
+      "group": "music",
+      "title": "Keep Recently Played",
+      "default": "0",
+      "options": [
+        {
+          "value": "0",
+          "title": "Off"
+        },
+        {
+          "value": "25",
+          "title": "25 songs"
+        },
+        {
+          "value": "50",
+          "title": "50 songs"
+        },
+        {
+          "value": "100",
+          "title": "100 songs"
+        },
+        {
+          "value": "200",
+          "title": "200 songs"
+        }
+      ],
+      "min": 0,
+      "max": 200,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicDownloadNewAlbums",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "New Albums from Favorite Artists",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicStorageLimitGB",
+      "type": "int",
+      "scope": "synced",
+      "group": "music",
+      "title": "Storage Limit",
+      "default": "0",
+      "options": [
+        {
+          "value": "0",
+          "title": "No Limit"
+        },
+        {
+          "value": "1",
+          "title": "1 GB"
+        },
+        {
+          "value": "2",
+          "title": "2 GB"
+        },
+        {
+          "value": "5",
+          "title": "5 GB"
+        },
+        {
+          "value": "10",
+          "title": "10 GB"
+        },
+        {
+          "value": "20",
+          "title": "20 GB"
+        },
+        {
+          "value": "50",
+          "title": "50 GB"
+        }
+      ],
+      "min": 0,
+      "max": 50,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicVisualizer",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Visualizer",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicVisualizerTint",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Colour from Cover",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicFindLyricsOnline",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Find Missing Lyrics",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicIdentifySongs",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "What's Playing?",
+      "default": "false",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "musicAppleMusic",
+      "type": "bool",
+      "scope": "synced",
+      "group": "music",
+      "title": "Apple Music",
+      "default": "false",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "wifiOnly",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Wait for Wi-Fi",
+      "detail": "On, downloads wait for Wi-Fi. The app shows it the other way round, as Download on Mobile Data.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "downloadQuality",
+      "type": "string",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Download Quality",
+      "default": "Max",
+      "options": [
+        {
+          "value": "Max",
+          "title": "Original"
+        },
+        {
+          "value": "high",
+          "title": "High"
+        },
+        {
+          "value": "balanced",
+          "title": "Balanced"
+        },
+        {
+          "value": "spaceSaver",
+          "title": "Space Saver"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "concurrentDownloads",
+      "type": "int",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Downloads at Once",
+      "detail": "How many download at the same time.",
+      "default": "1",
+      "options": [
+        {
+          "value": "1",
+          "title": "1"
+        },
+        {
+          "value": "2",
+          "title": "2"
+        },
+        {
+          "value": "3",
+          "title": "3"
+        }
+      ],
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "downloadSubtitles",
+      "type": "string",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Subtitles",
+      "default": "all",
+      "options": [
+        {
+          "value": "all",
+          "title": "All"
+        },
+        {
+          "value": "preferred",
+          "title": "Preferred Language"
+        },
+        {
+          "value": "none",
+          "title": "None"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "downloadTrickplay",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Scrubbing Previews",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "seasonDownloadUnwatchedOnly",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Season Downloads Skip Watched",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "pauseDownloadsInLowPowerMode",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Pause in Low Power Mode",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "pauseDownloadsInLowDataMode",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Pause in Low Data Mode",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "downloadWhilePlaying",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Keep Downloading While Playing",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "deleteDownloadsAfterWatching",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Delete After Watching",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "removeDownloadsAfterDays",
+      "type": "int",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Remove Downloads After",
+      "default": "0",
+      "options": [
+        {
+          "value": "0",
+          "title": "Never"
+        },
+        {
+          "value": "7",
+          "title": "7 Days"
+        },
+        {
+          "value": "30",
+          "title": "30 Days"
+        }
+      ],
+      "min": 0,
+      "max": 30,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "removeWatchedWhenLowOnSpace",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Remove Watched When Low on Space",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Smart Downloads",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsEpisodeCount",
+      "type": "int",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Episodes to Keep",
+      "default": "2",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsStorageBudgetGB",
+      "type": "int",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Storage Budget",
+      "default": "10",
+      "options": [
+        {
+          "value": "5",
+          "title": "5 GB"
+        },
+        {
+          "value": "10",
+          "title": "10 GB"
+        },
+        {
+          "value": "25",
+          "title": "25 GB"
+        },
+        {
+          "value": "50",
+          "title": "50 GB"
+        }
+      ],
+      "min": 5,
+      "max": 50,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsAllowMobileData",
+      "type": "bool",
+      "scope": "synced",
+      "group": "downloads",
+      "title": "Use Mobile Data",
+      "default": "false",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "reduceMotion",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Reduce Motion",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "hapticsEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Haptic Feedback",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "mergeContinueWatchingAndUpNext",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Merge Continue Watching & Up Next",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "heroVideoBackdropsEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Hero Video Backdrops",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "heroTrailerSound",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Hero Trailer Sound",
+      "default": "false",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "topShelfTrailers",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Top Shelf Trailers",
+      "detail": "Plays a title's trailer in the Top Shelf when you rest on it there, if the server has one. Apple TV decides when it has sound.",
+      "default": "true",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "modernHome",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Spotlight Home",
+      "default": "false",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "shuffleHomeShelves",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Shuffle Shelves",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "homeEpisodeArtwork",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Episode Artwork",
+      "default": "episode",
+      "options": [
+        {
+          "value": "episode",
+          "title": "Episode"
+        },
+        {
+          "value": "series",
+          "title": "Show"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "showUnwatchedCount",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Show Unwatched Count",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "spoilerProtection",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Spoiler Protection",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryHideWatched",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Hide Watched in Libraries",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "modernSearch",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Modern Search",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "saveSearchHistory",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Save Search History",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "notifyNewEpisodes",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "New Episodes",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyNewFilms",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "New Films",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyNewContent",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "New Content",
+      "detail": "Read by older app versions; New Episodes and New Films replace it.",
+      "default": "true",
+      "platforms": []
+    },
+    {
+      "key": "notifyRequestUpdates",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Request Updates",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyWatchlistAvailable",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Watchlist Available",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyDownload",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Download Complete",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "musicNotifyDownloads",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Music Downloads",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyServerEvents",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Server Events",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "showStreamsOnAppIcon",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Show Active Streams on App Icon",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "quietHoursEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Quiet Hours",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "quietHoursStart",
+      "type": "int",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Quiet Hours From",
+      "detail": "Minutes after midnight.",
+      "default": "1320",
+      "min": 0,
+      "max": 1439,
+      "step": 15,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "quietHoursEnd",
+      "type": "int",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Quiet Hours To",
+      "detail": "Minutes after midnight.",
+      "default": "420",
+      "min": 0,
+      "max": 1439,
+      "step": 15,
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "seerrDiscoverEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "integrations",
+      "title": "Show Discover on Home",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "seerrURL",
+      "type": "string",
+      "scope": "synced",
+      "group": "integrations",
+      "title": "Seerr Server URL",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "seerrUsername",
+      "type": "string",
+      "scope": "synced",
+      "group": "integrations",
+      "title": "Seerr Username",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "seerrAuthMethod",
+      "type": "string",
+      "scope": "synced",
+      "group": "integrations",
+      "title": "Seerr Sign-In",
+      "default": "jellyfin",
+      "options": [
+        {
+          "value": "jellyfin",
+          "title": "Jellyfin Account"
+        },
+        {
+          "value": "local",
+          "title": "Local Account"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "defaultPlaybackSpeed",
+      "type": "double",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Default Speed",
+      "detail": "The speed new videos start at.",
+      "default": "1.0",
+      "options": [
+        {
+          "value": "0.75",
+          "title": "0.75×"
+        },
+        {
+          "value": "1.0",
+          "title": "1.0×"
+        },
+        {
+          "value": "1.25",
+          "title": "1.25×"
+        },
+        {
+          "value": "1.5",
+          "title": "1.5×"
+        },
+        {
+          "value": "1.75",
+          "title": "1.75×"
+        },
+        {
+          "value": "2.0",
+          "title": "2.0×"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "holdSpeedRate",
+      "type": "double",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Hold Speed",
+      "default": "2.0",
+      "options": [
+        {
+          "value": "1.5",
+          "title": "1.5×"
+        },
+        {
+          "value": "2.0",
+          "title": "2.0×"
+        },
+        {
+          "value": "3.0",
+          "title": "3.0×"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "dialogueBoost",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Dialogue Boost",
+      "detail": "Set from the player's audio menu.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "hiddenLibraryIDs",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Hidden Libraries",
+      "detail": "Library ids hidden from Browse, comma-separated.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "homeShelfOrder",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Home Shelf Order",
+      "detail": "Home's rows in order, comma-separated; empty is the default order.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "homeShelfActive",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Home Shelves Shown",
+      "detail": "The rows Home shows, comma-separated; empty is the default set.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "seerrRegionOverride",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Country",
+      "detail": "For streaming services; empty uses Seerr's or this device's region.",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryGridDensity",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Grid Density",
+      "default": "normal",
+      "options": [
+        {
+          "value": "compact",
+          "title": "Compact"
+        },
+        {
+          "value": "normal",
+          "title": "Normal"
+        },
+        {
+          "value": "comfortable",
+          "title": "Comfortable"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "collectionSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Collection Sort",
+      "default": "Release Order",
+      "options": [
+        {
+          "value": "Release Order",
+          "title": "Release Order"
+        },
+        {
+          "value": "Title",
+          "title": "Title"
+        },
+        {
+          "value": "Rating",
+          "title": "Rating"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "collectionShowsGrid",
+      "type": "bool",
+      "scope": "synced",
+      "group": "library",
+      "title": "Collections as a Grid",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "statsPeriod",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Stats Period",
+      "default": "month",
+      "options": [
+        {
+          "value": "week",
+          "title": "Week"
+        },
+        {
+          "value": "month",
+          "title": "Month"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "allTime",
+          "title": "All Time"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryScreensaverEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Library Screensaver",
+      "default": "true",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryScreensaverMinutes",
+      "type": "int",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Start After",
+      "default": "3",
+      "options": [
+        {
+          "value": "2",
+          "title": "2 minutes"
+        },
+        {
+          "value": "3",
+          "title": "3 minutes"
+        },
+        {
+          "value": "5",
+          "title": "5 minutes"
+        },
+        {
+          "value": "10",
+          "title": "10 minutes"
+        }
+      ],
+      "min": 2,
+      "max": 10,
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.songSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Song Sort",
+      "default": "name",
+      "options": [
+        {
+          "value": "name",
+          "title": "Name"
+        },
+        {
+          "value": "artist",
+          "title": "Artist"
+        },
+        {
+          "value": "album",
+          "title": "Album"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "dateAdded",
+          "title": "Date Added"
+        },
+        {
+          "value": "playCount",
+          "title": "Play Count"
+        },
+        {
+          "value": "datePlayed",
+          "title": "Date Played"
+        },
+        {
+          "value": "random",
+          "title": "Random"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.albumSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Album Sort",
+      "default": "name",
+      "options": [
+        {
+          "value": "name",
+          "title": "Name"
+        },
+        {
+          "value": "artist",
+          "title": "Artist"
+        },
+        {
+          "value": "album",
+          "title": "Album"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "dateAdded",
+          "title": "Date Added"
+        },
+        {
+          "value": "playCount",
+          "title": "Play Count"
+        },
+        {
+          "value": "datePlayed",
+          "title": "Date Played"
+        },
+        {
+          "value": "random",
+          "title": "Random"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "streamingServices",
+      "type": "json",
+      "scope": "device",
+      "group": "appearance",
+      "title": "Streaming Services",
+      "detail": "The streaming service rows on Home, as a JSON list.",
+      "format": "json",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "bottomNavOrder",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Tab Order",
+      "detail": "Tabs in order, comma-separated; empty is the default order.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "bottomNavActive",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Tabs Shown",
+      "detail": "The tabs shown, comma-separated; empty is the default set.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "launchTab",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Open To",
+      "default": "home",
+      "options": [
+        {
+          "value": "home",
+          "title": "Home"
+        },
+        {
+          "value": "browse",
+          "title": "Browse"
+        },
+        {
+          "value": "stats",
+          "title": "Stats"
+        },
+        {
+          "value": "requests",
+          "title": "Discover"
+        },
+        {
+          "value": "watchlist",
+          "title": "Watchlist"
+        },
+        {
+          "value": "admin",
+          "title": "Admin"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "music.libraryRowOrder",
+      "type": "string",
+      "scope": "device",
+      "group": "music",
+      "title": "Music Library Rows",
+      "detail": "The music library's rows in order, comma-separated.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.libraryRowsHidden",
+      "type": "string",
+      "scope": "device",
+      "group": "music",
+      "title": "Hidden Music Library Rows",
+      "detail": "Music library rows hidden, comma-separated.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "appLockUseFaceID",
+      "type": "bool",
+      "scope": "device",
+      "group": "profiles",
+      "title": "Use Face ID or Touch ID",
+      "detail": "A faster unlock for a profile with a PIN.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "alwaysAskWhoIsWatching",
+      "type": "bool",
+      "scope": "device",
+      "group": "profiles",
+      "title": "Always Ask Who's Watching",
+      "default": "false",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "settingsSyncMode",
+      "type": "string",
+      "scope": "device",
+      "group": "sync",
+      "title": "Sync Settings",
+      "default": "automatic",
+      "options": [
+        {
+          "value": "automatic",
+          "title": "Automatically"
+        },
+        {
+          "value": "ask",
+          "title": "Ask First"
+        },
+        {
+          "value": "off",
+          "title": "Off"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    }
+  ]
+}

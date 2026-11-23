@@ -1,0 +1,437 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Jellyfin.Plugin.ArcfinSync.Configuration;
+
+namespace Jellyfin.Plugin.ArcfinSync.Api;
+
+public sealed record EffectiveRule(string Key, string? Value, bool Locked);
+
+/// <summary>
+/// How stored values, admin defaults and locks combine. No I/O here, so it can be tested alone.
+/// </summary>
+public static class SettingsRules
+{
+    public const int MaxKeys = 512;
+    public const int MaxKeyLength = 128;
+    public const int MaxValueLength = 4096;
+    public const int MaxNameLength = 64;
+    public const int MaxDevicesPerUser = 50;
+    public const int MaxDeviceIdLength = 256;
+    public const int MaxFieldLength = 128;
+
+    public const string SeerrUsername = "seerrUsername";
+    public const string SeerrAuthMethod = "seerrAuthMethod";
+
+    public static readonly string[] Platforms = { "iOS", "iPadOS", "macOS", "tvOS" };
+    public static readonly string[] SyncModes = { "automatic", "ask", "off" };
+
+    /// <summary>Server connection settings a Replace never clears.</summary>
+    public static readonly string[] NeverReplaced = { "seerrURL", SeerrUsername, SeerrAuthMethod };
+
+    /// <summary>The schema's platform name for a device platform: iPadOS shows what iOS shows.</summary>
+    public static string? SchemaPlatform(string? devicePlatform)
+    {
+        return devicePlatform switch
+        {
+            "iOS" or "iPadOS" => "iOS",
+            "macOS" => "macOS",
+            "tvOS" => "tvOS",
+            _ => null
+        };
+    }
+
+    /// <summary>The limit on how many settings one request has; null when it's within it.</summary>
+    public static string? CheckPayload(IReadOnlyDictionary<string, string?>? values)
+    {
+        return values is not null && values.Count > MaxKeys ? $"At most {MaxKeys} settings per request." : null;
+    }
+
+    /// <summary>
+    /// The settings whose key and value are within the size limits. One that isn't is skipped
+    /// rather than refusing the rest: a list that grows with use mustn't stop a device syncing.
+    /// </summary>
+    public static Dictionary<string, string?> WithinLimits(IReadOnlyDictionary<string, string?>? values)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        if (values is null)
+        {
+            return result;
+        }
+
+        foreach (var (key, value) in values)
+        {
+            if (key.Length > 0 && key.Length <= MaxKeyLength && (value is null || value.Length <= MaxValueLength))
+            {
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Keeps the schema keys of the given scope (any scope when null) whose values fit their type.
+    /// Anything else is dropped rather than refused: the app and the plugin can be a version apart.
+    /// </summary>
+    public static Dictionary<string, string?> FilterToSchema(SettingsSchema schema, IReadOnlyDictionary<string, string?>? values, string? scope)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        if (values is null)
+        {
+            return result;
+        }
+
+        foreach (var (key, value) in values)
+        {
+            var setting = schema.Find(key);
+            if (setting is null || (scope is not null && setting.Scope != scope))
+            {
+                continue;
+            }
+
+            if (value is not null && !SettingsSchema.IsValidValue(setting, value))
+            {
+                continue;
+            }
+
+            result[key] = value;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The global rules with this user's overrides applied, in the global list's order and then
+    /// the user's extra keys. An override's lock, when it has one, replaces the global lock (so it
+    /// can also unlock); without one, and for its default, the global one applies.
+    /// </summary>
+    public static List<EffectiveRule> RulesForUser(SettingsPolicy policy, Guid userId)
+    {
+        var overrides = policy.Users.FirstOrDefault(u => u.UserId == userId)?.Settings ?? new List<UserPolicySetting>();
+        var overrideByKey = new Dictionary<string, UserPolicySetting>(StringComparer.Ordinal);
+        foreach (var o in overrides)
+        {
+            overrideByKey.TryAdd(o.Key, o);
+        }
+
+        var result = new List<EffectiveRule>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var global in policy.Settings)
+        {
+            if (!seen.Add(global.Key))
+            {
+                continue;
+            }
+
+            if (overrideByKey.TryGetValue(global.Key, out var o))
+            {
+                result.Add(new EffectiveRule(global.Key, o.DefaultValue ?? global.DefaultValue, o.Locked ?? global.Locked));
+            }
+            else
+            {
+                result.Add(new EffectiveRule(global.Key, global.DefaultValue, global.Locked));
+            }
+        }
+
+        foreach (var o in overrides)
+        {
+            if (seen.Add(o.Key))
+            {
+                result.Add(new EffectiveRule(o.Key, o.DefaultValue, o.Locked ?? false));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Locked to the Jellyfin account type means each user's Seerr username is their Jellyfin
+    /// username, so it's forced. Otherwise each user keeps their own.
+    /// </summary>
+    public static bool IsSeerrUsernameForced(IEnumerable<EffectiveRule> rules)
+    {
+        var authMethod = rules.LastOrDefault(r => r.Key == SeerrAuthMethod);
+        return authMethod is { Locked: true, Value: "jellyfin" };
+    }
+
+    public static HashSet<string> LockedKeys(List<EffectiveRule> rules)
+    {
+        var locked = rules.Where(r => r.Locked).Select(r => r.Key).ToHashSet(StringComparer.Ordinal);
+        if (IsSeerrUsernameForced(rules))
+        {
+            locked.Add(SeerrUsername);
+        }
+
+        return locked;
+    }
+
+    /// <summary>
+    /// GET Settings exactly as 0.3.x built it: one row per rule in order (null values included),
+    /// then seerrUsername, then the user's other stored values.
+    /// </summary>
+    public static List<SyncedSettingDto> LegacyMerge(List<EffectiveRule> rules, IReadOnlyDictionary<string, string?> userValues, string? jellyfinUsername)
+    {
+        var result = new List<SyncedSettingDto>();
+        var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var rule in rules)
+        {
+            // Never one literal Seerr username for everyone; see seerrAuthMethod below.
+            if (rule.Key == SeerrUsername)
+            {
+                continue;
+            }
+
+            seenKeys.Add(rule.Key);
+            var value = rule.Locked
+                ? rule.Value
+                : (userValues.TryGetValue(rule.Key, out var stored) ? stored : rule.Value);
+            result.Add(new SyncedSettingDto { Key = rule.Key, Value = value, IsLocked = rule.Locked });
+        }
+
+        seenKeys.Add(SeerrUsername);
+        if (IsSeerrUsernameForced(rules))
+        {
+            result.Add(new SyncedSettingDto { Key = SeerrUsername, Value = jellyfinUsername, IsLocked = true });
+        }
+        else
+        {
+            var storedUsername = userValues.TryGetValue(SeerrUsername, out var su) ? su : null;
+            result.Add(new SyncedSettingDto { Key = SeerrUsername, Value = storedUsername, IsLocked = false });
+        }
+
+        foreach (var (key, value) in userValues)
+        {
+            if (seenKeys.Contains(key))
+            {
+                continue;
+            }
+
+            result.Add(new SyncedSettingDto { Key = key, Value = value, IsLocked = false });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Effective values for every schema key: locked → policy value, else the user's stored
+    /// value (synced keys only), else the policy default; keys with no value at all are left out.
+    /// </summary>
+    public static List<SyncSettingDto> SyncMerge(SettingsSchema schema, List<EffectiveRule> rules, IReadOnlyDictionary<string, string?> userValues, string? jellyfinUsername)
+    {
+        var ruleByKey = new Dictionary<string, EffectiveRule>(StringComparer.Ordinal);
+        foreach (var rule in rules)
+        {
+            ruleByKey.TryAdd(rule.Key, rule);
+        }
+
+        var forced = IsSeerrUsernameForced(rules);
+        var result = new List<SyncSettingDto>();
+        foreach (var setting in schema.Settings)
+        {
+            var key = setting.Key;
+            if (key == SeerrUsername)
+            {
+                if (forced)
+                {
+                    result.Add(new SyncSettingDto { Key = key, Value = jellyfinUsername, IsLocked = true, Source = "locked" });
+                }
+                else if (userValues.TryGetValue(key, out var su) && su is not null)
+                {
+                    result.Add(new SyncSettingDto { Key = key, Value = su, IsLocked = false, Source = "user" });
+                }
+
+                continue;
+            }
+
+            ruleByKey.TryGetValue(key, out var r);
+            if (r is { Locked: true })
+            {
+                result.Add(new SyncSettingDto { Key = key, Value = r.Value, IsLocked = true, Source = "locked" });
+            }
+            else if (setting.Scope == SettingsSchema.ScopeSynced && userValues.TryGetValue(key, out var stored) && stored is not null)
+            {
+                result.Add(new SyncSettingDto { Key = key, Value = stored, IsLocked = false, Source = "user" });
+            }
+            else if (r?.Value is not null)
+            {
+                result.Add(new SyncSettingDto { Key = key, Value = r.Value, IsLocked = false, Source = "default" });
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Applies incoming values to the stored map. Locked keys are never stored; a null value
+    /// clears the key. With <paramref name="replace"/>, each unlocked synced key the sending
+    /// device's platform shows but that isn't in the payload is cleared too: a device only sends
+    /// what it shows, so settings of other platforms stay. Server connection keys are never
+    /// cleared, and with no known platform nothing is. Keys that aren't in the schema are kept.
+    /// <paramref name="sent"/>: every key the device sent, including ones skipped as too long or
+    /// of the wrong type, which a Replace keeps as they are. Returns whether anything changed.
+    /// </summary>
+    public static bool Apply(SettingsSchema schema, Dictionary<string, string?> stored, IReadOnlyDictionary<string, string?> incoming,
+                             HashSet<string> lockedKeys, bool replace, string? platform = null, IEnumerable<string>? sent = null)
+    {
+        var sentKeys = new HashSet<string>(incoming.Keys, StringComparer.Ordinal);
+        sentKeys.UnionWith(sent ?? Array.Empty<string>());
+        var changed = false;
+        foreach (var (key, value) in incoming)
+        {
+            if (lockedKeys.Contains(key))
+            {
+                continue;
+            }
+
+            if (value is null)
+            {
+                changed |= stored.Remove(key);
+            }
+            else if (!stored.TryGetValue(key, out var old) || old != value)
+            {
+                stored[key] = value;
+                changed = true;
+            }
+        }
+
+        var schemaPlatform = SchemaPlatform(platform);
+        if (replace && schemaPlatform is not null)
+        {
+            foreach (var setting in schema.Settings)
+            {
+                var shownHere = setting.Platforms is not { Count: > 0 } || setting.Platforms.Contains(schemaPlatform);
+                if (setting.Scope == SettingsSchema.ScopeSynced && shownHere && !NeverReplaced.Contains(setting.Key)
+                    && !lockedKeys.Contains(setting.Key) && !sentKeys.Contains(setting.Key))
+                {
+                    changed |= stored.Remove(setting.Key);
+                }
+            }
+        }
+
+        return changed;
+    }
+
+    public static SettingsPolicy FromLegacy(IEnumerable<LockedSetting> legacy)
+    {
+        var policy = new SettingsPolicy();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var l in legacy)
+        {
+            if (string.IsNullOrEmpty(l.Key) || !seen.Add(l.Key))
+            {
+                continue;
+            }
+
+            policy.Settings.Add(new PolicySetting { Key = l.Key, DefaultValue = l.PrefillValue, Locked = l.IsLocked });
+        }
+
+        return policy;
+    }
+
+    public static List<LockedSetting> ToLegacy(SettingsPolicy policy)
+    {
+        return policy.Settings.Select(s => new LockedSetting { Key = s.Key, IsLocked = s.Locked, PrefillValue = s.DefaultValue }).ToList();
+    }
+
+    /// <summary>
+    /// Removes stored values that aren't synced settings in the schema: keys from 0.3.x or from
+    /// settings the app has dropped, and device-only keys. Returns whether anything was removed.
+    /// </summary>
+    public static bool PurgeToSchema(SettingsSchema schema, Dictionary<string, string?> stored)
+    {
+        var removed = false;
+        foreach (var key in stored.Keys.ToList())
+        {
+            if (!schema.IsSynced(key))
+            {
+                stored.Remove(key);
+                removed = true;
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Brings <see cref="PluginConfiguration.Policy"/> up to date with the legacy list: built from
+    /// it after an upgrade, and the global part re-imported when something wrote only the legacy
+    /// list (0.3.x after a downgrade, or the generic plugin configuration API). User overrides stay.
+    /// Keys that aren't in the schema are dropped from both. Returns the policy to use and whether
+    /// the configuration needs saving.
+    /// </summary>
+    public static (SettingsPolicy Policy, bool Changed) Reconcile(SettingsSchema schema, SettingsPolicy? policy, List<LockedSetting>? legacy)
+    {
+        legacy ??= new List<LockedSetting>();
+        var known = legacy.Where(l => schema.Find(l.Key) is not null).ToList();
+        if (policy is null)
+        {
+            return (FromLegacy(known), true);
+        }
+
+        policy.Settings ??= new List<PolicySetting>();
+        policy.Users ??= new List<UserPolicyOverride>();
+        var dropped = policy.Settings.RemoveAll(s => schema.Find(s.Key) is null) > 0;
+        foreach (var user in policy.Users)
+        {
+            user.Settings ??= new List<UserPolicySetting>();
+            dropped |= user.Settings.RemoveAll(s => schema.Find(s.Key) is null || (s.DefaultValue is null && s.Locked is null)) > 0;
+        }
+
+        dropped |= policy.Users.RemoveAll(u => u.Settings.Count == 0) > 0;
+        if (LegacyMatches(ToLegacy(policy), legacy))
+        {
+            return (policy, dropped);
+        }
+
+        if (LegacyMatches(ToLegacy(policy), known))
+        {
+            return (policy, true);
+        }
+
+        var reimported = FromLegacy(known);
+        reimported.Users = policy.Users;
+        return (reimported, true);
+    }
+
+    private static bool LegacyMatches(List<LockedSetting> derived, List<LockedSetting> legacy)
+    {
+        if (derived.Count != legacy.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < derived.Count; i++)
+        {
+            if (derived[i].Key != legacy[i].Key || derived[i].IsLocked != legacy[i].IsLocked || derived[i].PrefillValue != legacy[i].PrefillValue)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>A device name trimmed, or an error when it's too long or has control characters.</summary>
+    public static (string? Name, string? Error) CleanName(string? name)
+    {
+        var trimmed = (name ?? string.Empty).Trim();
+        if (trimmed.Length > MaxNameLength)
+        {
+            return (null, $"A device name can be at most {MaxNameLength} characters.");
+        }
+
+        if (trimmed.Any(char.IsControl))
+        {
+            return (null, "A device name can't contain control characters.");
+        }
+
+        return (trimmed, null);
+    }
+
+    public static bool IsCleanField(string? value, int maxLength = MaxFieldLength)
+    {
+        return value is null || (value.Length <= maxLength && !value.Any(char.IsControl));
+    }
+}

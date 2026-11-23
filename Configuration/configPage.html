@@ -1,0 +1,158 @@
+<div id="ArcfinSyncConfigPage" data-role="page" class="page type-interior pluginConfigurationPage arcfinSyncPage" data-controller="__plugin/ArcfinSync.js" data-require="emby-input,emby-button,emby-checkbox,emby-select,emby-textarea">
+    <div data-role="content">
+        <div class="content-primary">
+            <div class="afHeader">
+                <div>
+                    <h2 class="afTitle">Arcfin Sync</h2>
+                    <div class="afSubtitle">Defaults, locks and devices for everyone who uses Arcfin on this server.</div>
+                </div>
+                <span class="afVersion" id="afVersion"></span>
+            </div>
+
+            <div class="afTabs" role="tablist" aria-label="Arcfin Sync sections">
+                <button type="button" class="afTab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+                <button type="button" class="afTab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+                <button type="button" class="afTab" role="tab" data-tab="users" aria-selected="false">Users &amp; Devices</button>
+            </div>
+
+            <section class="afPanel" data-panel="overview" role="tabpanel">
+                <div class="afStats" id="afStats"></div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">How it works</h3>
+                    <ul class="afList">
+                        <li>Arcfin keeps each user's settings in step across their iPhone, iPad, Mac and Apple TV.</li>
+                        <li>On <b>Settings</b>, give any setting a default (used until someone picks their own) or lock it (everyone gets your value and can't change it).</li>
+                        <li>On <b>Users &amp; Devices</b>, see every device signed in with Arcfin, rename or forget one, and give a single user their own defaults and locks.</li>
+                        <li>Changes reach each device the next time Arcfin syncs: when it opens, comes to the front, or a setting changes.</li>
+                    </ul>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Links</h3>
+                    <div class="afLinks">
+                        <a is="emby-linkbutton" class="button-link" href="https://arcfin.psmattas.com/support" target="_blank" rel="noopener noreferrer">Help and FAQ</a>
+                        <a is="emby-linkbutton" class="button-link" href="https://git.psmattas.com/ArcFin/Arcfin-Sync" target="_blank" rel="noopener noreferrer">Source code</a>
+                        <a is="emby-linkbutton" class="button-link" href="https://git.psmattas.com/ArcFin/ArcFin/issues" target="_blank" rel="noopener noreferrer">Report a problem</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="settings" role="tabpanel" hidden>
+                <div class="afToolbar">
+                    <input type="search" class="afSearch" id="afSettingsSearch" placeholder="Search settings" aria-label="Search settings" />
+                    <label class="afInline"><input type="checkbox" id="afOnlyChanged" /> <span>Only changed</span></label>
+                </div>
+                <p class="fieldDescription">A default applies until a user picks their own value. A locked setting always uses your value and is greyed out in Arcfin. Settings marked <span class="afBadge">This device</span> describe a device's hardware: they never sync, but a default or lock still applies on every device.</p>
+                <div id="afSettingsGroups"></div>
+                <div class="afEmpty" id="afSettingsEmpty" hidden>No settings match.</div>
+            </section>
+
+            <section class="afPanel" data-panel="users" role="tabpanel" hidden>
+                <p class="fieldDescription">Every user and each device they've used with Arcfin. Forgetting a device only removes it from this list; it stays signed in and comes back the next time it syncs. Per-user overrides replace the server-wide default and lock for that one user, and can unlock a setting just for them.</p>
+                <div id="afUsers"></div>
+            </section>
+
+            <div class="afSaveBar" id="afSaveBar" hidden>
+                <span>You have unsaved changes to defaults and locks.</span>
+                <div class="afButtons">
+                    <button is="emby-button" type="button" class="raised emby-button" id="afRevert"><span>Discard</span></button>
+                    <button is="emby-button" type="button" class="raised button-submit emby-button" id="afSavePolicy"><span>Save Changes</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .arcfinSyncPage {
+            --af-surface: var(--jf-palette-background-paper, rgba(128, 128, 128, 0.08));
+            --af-text: var(--jf-palette-text-primary, inherit);
+            --af-muted: var(--jf-palette-text-secondary, rgba(128, 128, 128, 0.95));
+            --af-divider: var(--jf-palette-divider, rgba(128, 128, 128, 0.25));
+            --af-accent: var(--jf-palette-primary-main, #00a4dc);
+            --af-accent-text: var(--jf-palette-primary-contrastText, #fff);
+            --af-field: var(--jf-palette-FilledInput-bg, rgba(128, 128, 128, 0.15));
+            --af-field-border: var(--jf-palette-FilledInput-borderColor, rgba(128, 128, 128, 0.35));
+            --af-focus: var(--jf-palette-secondary-main, #00a4dc);
+            --af-error: var(--jf-palette-error-main, #cb272a);
+            --af-radius: var(--jf-card-borderRadius, 0.5em);
+        }
+        .arcfinSyncPage [hidden] { display: none !important; }
+        .arcfinSyncPage .content-primary { padding-bottom: 6em; }
+        .afHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1em; margin-bottom: 1em; }
+        .afTitle { margin: 0 0 0.2em; }
+        .afSubtitle { color: var(--af-muted); }
+        .afVersion { font-size: 0.85em; padding: 0.25em 0.7em; border-radius: 1em; border: 1px solid var(--af-divider); color: var(--af-muted); white-space: nowrap; }
+        .afTabs { display: flex; gap: 0.25em; border-bottom: 1px solid var(--af-divider); margin-bottom: 1.25em; overflow-x: auto; scrollbar-width: none; }
+        .afTab { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--af-muted); padding: 0.75em 1em; font: inherit; cursor: pointer; white-space: nowrap; }
+        .afTab:hover, .afTab:focus-visible { color: var(--af-text); outline: none; border-bottom-color: var(--af-focus); }
+        .afTab[aria-selected="true"] { color: var(--af-text); border-bottom-color: var(--af-accent); font-weight: 600; }
+        .afCard { background: var(--af-surface); border-radius: var(--af-radius); padding: 1em 1.25em; margin-bottom: 1em; }
+        .afCardTitle { margin: 0 0 0.6em; font-size: 1.05em; }
+        .afList { margin: 0; padding-left: 1.2em; line-height: 1.6; }
+        .afLinks { display: flex; flex-wrap: wrap; gap: 0.5em 1.5em; }
+        .afStats { display: grid; grid-template-columns: repeat(auto-fill, minmax(11em, 1fr)); gap: 0.75em; margin-bottom: 1em; }
+        .afStat { background: var(--af-surface); border-radius: var(--af-radius); padding: 0.9em 1.1em; }
+        .afStatValue { font-size: 1.7em; font-weight: 600; line-height: 1.2; }
+        .afStatLabel { color: var(--af-muted); font-size: 0.9em; }
+        .afToolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75em 1.25em; margin-bottom: 0.5em; }
+        .afSearch, .afControl { background: var(--af-field); color: inherit; border: 1px solid var(--af-field-border); border-radius: 0.3em; padding: 0.5em 0.6em; font: inherit; box-sizing: border-box; }
+        .afSearch { flex: 1 1 16em; max-width: 28em; }
+        .afSearch:focus, .afControl:focus { outline: none; border-color: var(--af-focus); }
+        .afControl option { color: initial; }
+        .afInline { display: inline-flex; align-items: center; gap: 0.4em; cursor: pointer; }
+        .afGroup { margin-bottom: 1.25em; }
+        .afGroupTitle { margin: 1.2em 0 0.5em; font-size: 1.05em; display: flex; align-items: baseline; gap: 0.6em; }
+        .afGroupCount { color: var(--af-muted); font-weight: normal; font-size: 0.85em; }
+        .afRows { background: var(--af-surface); border-radius: var(--af-radius); overflow: hidden; }
+        .afRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(9em, 15em) auto; align-items: center; gap: 0.5em 1em; padding: 0.7em 1em; border-top: 1px solid var(--af-divider); }
+        .afRow:first-child { border-top: 0; }
+        .afRow.afChanged { box-shadow: inset 3px 0 0 var(--af-accent); }
+        .afRowTitle { font-weight: 500; }
+        .afRowMeta { color: var(--af-muted); font-size: 0.82em; margin-top: 0.15em; }
+        .afKey { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .afRowControl .afControl { width: 100%; }
+        .afLock { display: inline-flex; align-items: center; gap: 0.35em; white-space: nowrap; cursor: pointer; }
+        .afBadge { display: inline-block; font-size: 0.75em; padding: 0.05em 0.5em; border-radius: 1em; border: 1px solid var(--af-divider); color: var(--af-muted); vertical-align: middle; }
+        .afBadgeAccent { border-color: var(--af-accent); color: var(--af-text); }
+        .afNote { color: var(--af-muted); font-size: 0.9em; grid-column: 2 / 4; }
+        .afEmpty { color: var(--af-muted); padding: 2em 0; text-align: center; }
+        .afUser { background: var(--af-surface); border-radius: var(--af-radius); margin-bottom: 0.75em; }
+        .afUser > summary { list-style: none; cursor: pointer; padding: 0.9em 1.1em; display: flex; align-items: center; gap: 0.75em; flex-wrap: wrap; }
+        .afUser > summary::-webkit-details-marker { display: none; }
+        .afUser > summary::before { content: "\25B8"; color: var(--af-muted); transition: transform 0.15s; }
+        .afUser[open] > summary::before { transform: rotate(90deg); }
+        .afUserName { font-weight: 600; }
+        .afUserBody { padding: 0 1.1em 1em; }
+        .afSubTitle { margin: 1em 0 0.4em; font-size: 0.95em; color: var(--af-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .afDevice { border-top: 1px solid var(--af-divider); padding: 0.7em 0; }
+        .afDeviceHead { display: flex; align-items: center; gap: 0.5em 1em; flex-wrap: wrap; }
+        .afDeviceName { font-weight: 500; }
+        .afDeviceMeta { color: var(--af-muted); font-size: 0.85em; flex: 1 1 auto; }
+        .afDeviceActions { display: flex; gap: 0.4em; flex-wrap: wrap; }
+        .afSmallButton { background: none; color: inherit; border: 1px solid var(--af-divider); border-radius: 0.3em; padding: 0.3em 0.75em; font: inherit; font-size: 0.9em; cursor: pointer; }
+        .afSmallButton:hover, .afSmallButton:focus-visible { border-color: var(--af-focus); outline: none; }
+        .afDanger { color: var(--af-error); }
+        .afDeviceSettings { margin-top: 0.5em; font-size: 0.88em; }
+        .afDeviceSettings summary { cursor: pointer; color: var(--af-muted); }
+        .afKv { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.15em 1em; margin-top: 0.4em; }
+        .afKv div:nth-child(odd) { color: var(--af-muted); }
+        .afKv div { overflow-wrap: anywhere; }
+        .afRename { display: flex; gap: 0.4em; margin-top: 0.5em; flex-wrap: wrap; }
+        .afRename .afControl { flex: 1 1 14em; max-width: 22em; }
+        .afOverrideAdd { display: flex; gap: 0.5em; margin-top: 0.6em; flex-wrap: wrap; }
+        .afOverrideAdd .afControl { flex: 1 1 16em; max-width: 26em; }
+        .afButtons { display: flex; gap: 0.6em; flex-wrap: wrap; margin-top: 1em; }
+        .afButtons .emby-button { margin: 0; }
+        .afJson summary { cursor: pointer; overflow-wrap: anywhere; }
+        .afJson textarea { width: 100%; margin-top: 0.5em; resize: vertical; }
+        .afJson .afButtons { margin-top: 0.4em; }
+        .afMono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .afSaveBar { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 0.75em 1.5em; flex-wrap: wrap; margin-top: 1em; padding: 0.75em 1.1em; background: var(--af-surface); border: 1px solid var(--af-accent); border-radius: var(--af-radius); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .afSaveBar .afButtons { margin-top: 0; }
+        @media (max-width: 40em) {
+            .afRow { grid-template-columns: minmax(0, 1fr) auto; }
+            .afRowControl { grid-column: 1 / 2; }
+            .afNote { grid-column: 1 / 3; }
+            .afHeader { flex-direction: column; }
+        }
+    </style>
+</div>

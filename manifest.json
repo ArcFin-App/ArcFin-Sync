@@ -2,12 +2,20 @@
   {
     "guid": "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d",
     "name": "Arcfin Sync",
-    "description": "Syncs Arcfin app settings across a user's devices, scoped by platform. Gives the admin lock, unlock, and prefill control per setting from the Jellyfin dashboard. Adds notifications for new media, admin announcements, and Seerr request availability.",
-    "overview": "Settings sync and notifications for Arcfin.",
+    "description": "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use.",
+    "overview": "Syncs Arcfin app settings across a user's devices, with admin defaults and locks.",
     "owner": "psmattas",
     "category": "General",
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/icon.png",
     "versions": [
+      {
+        "version": "0.4.0.0",
+        "changelog": "Settings catalogue: the plugin carries Arcfin's list of settings and serves it at GET /ArcfinSync/Schema, and only settings in it are stored. GET/PUT /ArcfinSync/Sync: each value with where it comes from, which device changed the settings last, and Replace to send one device's settings to the user's others. A record of each user's Arcfin devices, which users and administrators can rename and forget. Server-wide and per-user defaults and locks for administrators. One configuration page with Overview, Settings and Users & Devices tabs. Removed the notification, Seerr webhook and advanced YAML options, which nothing used. GET/PUT Settings keep their shapes, and 0.3 locks and defaults stay written so going back to 0.3.1 keeps them.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.4.0/arcfin-sync-0.4.0.0.zip",
+        "checksum": "ac85b81736303dd13cb6e09352356c7b",
+        "timestamp": "2026-11-23T20:52:54Z"
+      },
       {
         "version": "0.3.1.0",
         "changelog": "Added GET /ArcfinSync/Items/{itemId}/Audio/{streamIndex}: copies one audio track out with the server's ffmpeg as AAC in an .m4a, so Arcfin can keep several audio tracks in a converted download (Jellyfin's conversion keeps only one). Client Settings: Download Quality now offers Arcfin's four download choices.",

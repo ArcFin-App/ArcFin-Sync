@@ -1,17 +1,26 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.3.1.0"
+version: "0.4.0.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
-overview: "Syncs Arcfin app settings across devices and adds notification support to Jellyfin."
-description: "Syncs Arcfin app settings across a user's devices, scoped by platform. Gives the admin lock, unlock, and prefill control per setting from the Jellyfin dashboard. Adds notifications for new media, admin announcements, and Seerr request availability."
+overview: "Syncs Arcfin app settings across a user's devices, with admin defaults and locks."
+description: "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use."
 category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Added GET /ArcfinSync/Encoders: which video encoders (h264, hevc, av1) work with
-    the server's hardware acceleration setting, from a one-frame test encode per codec
-    with the server's own ffmpeg and device. Kept until the setting changes;
-    ?refresh=true tests again. Arcfin uses it to ask for AV1 only where the card
-    can encode it (a Pascal card, for one, has an AV1 encoder in ffmpeg but can't).
+  - Settings catalogue: the plugin carries Arcfin's list of settings and serves it at
+    GET /ArcfinSync/Schema; only settings in it are stored (other keys are removed from
+    users' stored values and from the policy), including decimal settings and settings
+    that hold a JSON array or object.
+  - GET/PUT /ArcfinSync/Sync: each value with where it comes from, which device changed
+    the settings last, and Replace to send one device's settings to the user's others
+    (only settings that device's platform shows).
+  - A record of each user's Arcfin devices, which users and administrators can rename
+    and forget.
+  - Server-wide and per-user defaults and locks for administrators.
+  - One configuration page with Overview, Settings and Users & Devices tabs.
+  - Removed the notification, Seerr webhook and advanced YAML options, which nothing used.
+  - GET/PUT Settings keep their shapes, and 0.3 locks and defaults stay written so going
+    back to 0.3.1 keeps them.
