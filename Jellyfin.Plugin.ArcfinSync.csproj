@@ -16,6 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="tests/**" />
+    <None Remove="tests/**" />
+    <EmbeddedResource Include="Schema\settings-schema.json" />
     <EmbeddedResource Include="Configuration\general.html" />
     <EmbeddedResource Include="Configuration\General.js" />
     <EmbeddedResource Include="Configuration\lockedSettings.html" />
