@@ -152,6 +152,15 @@ function lockToggle(locked, onChange, label) {
 
 // ----- Policy model -----
 
+// Locked, or a default that isn't the app's own. The 0.3 page saved every row with the value it
+// showed, so a default equal to the app's counts as unchanged.
+function isChanged(entry, setting) {
+    if (!entry) { return false; }
+    if (entry.Locked) { return true; }
+    if (entry.DefaultValue === null || entry.DefaultValue === undefined) { return false; }
+    return !setting || setting.default === undefined || setting.default === null || entry.DefaultValue !== setting.default;
+}
+
 function findEntry(list, key) {
     for (var i = 0; i < list.length; i++) {
         if (list[i].Key === key) { return list[i]; }
@@ -206,7 +215,7 @@ function renderOverview(view) {
     var devices = 0;
     STATE.users.forEach(function (u) { devices += u.Devices.length; });
     var locked = STATE.policy.Settings.filter(function (s) { return s.Locked; }).length;
-    var defaults = STATE.policy.Settings.filter(function (s) { return !s.Locked && s.DefaultValue !== null && s.DefaultValue !== undefined; }).length;
+    var defaults = STATE.policy.Settings.filter(function (s) { return !s.Locked && isChanged(s, schemaSetting(s.Key)); }).length;
     var overrides = STATE.policy.Users.filter(function (u) { return u.Settings.length; }).length;
     [
         [STATE.status.Installed ? "Active" : "Not loaded", "Plugin status"],
@@ -229,7 +238,7 @@ function renderOverview(view) {
 function settingRow(setting, entries, options) {
     var key = setting.key;
     var entry = findEntry(entries, key);
-    var changed = !!entry && (entry.Locked || (entry.DefaultValue !== null && entry.DefaultValue !== undefined) || options.isOverride);
+    var changed = isChanged(entry, setting) || !!options.isOverride;
     var row = el("div", { className: "afRow" + (changed ? " afChanged" : ""), "data-key": key });
     row.dataset.search = ((setting.title || "") + " " + key + " " + (setting.detail || "")).toLowerCase();
     row.dataset.changed = changed ? "true" : "false";
@@ -254,19 +263,33 @@ function settingRow(setting, entries, options) {
     var update = function (change) {
         setEntry(entries, key, change);
         var e = findEntry(entries, key);
-        var nowChanged = e.Locked || (e.DefaultValue !== null && e.DefaultValue !== undefined) || options.isOverride;
+        var nowChanged = isChanged(e, setting) || !!options.isOverride;
         row.classList.toggle("afChanged", nowChanged);
         row.dataset.changed = nowChanged ? "true" : "false";
         markDirty();
         if (options.onChange) { options.onChange(); }
     };
 
-    row.appendChild(el("div", { className: "afRowControl" }, [
-        valueControl(setting, entry ? entry.DefaultValue : null, function (v) { update(function (e) { e.DefaultValue = v; }); }, options.unsetLabel)
-    ]));
+    var controlCell = el("div", { className: "afRowControl" });
+    var drawControl = function () {
+        var current = findEntry(entries, key);
+        controlCell.innerHTML = "";
+        controlCell.appendChild(valueControl(setting, current ? current.DefaultValue : null, function (v) { update(function (e) { e.DefaultValue = v; }); }, options.unsetLabel));
+    };
+    drawControl();
+    row.appendChild(controlCell);
 
     var actions = el("div", { className: "afDeviceActions" }, [
-        lockToggle(entry && entry.Locked, function (on) { update(function (e) { e.Locked = on; }); }, "Lock " + (setting.title || key))
+        lockToggle(entry && entry.Locked, function (on) {
+            update(function (e) {
+                e.Locked = on;
+                // A server-wide lock pins a value: with none chosen, it's the app's default.
+                if (on && !options.isOverride && (e.DefaultValue === null || e.DefaultValue === undefined) && setting.default !== undefined && setting.default !== null) {
+                    e.DefaultValue = setting.default;
+                    drawControl();
+                }
+            });
+        }, "Lock " + (setting.title || key))
     ]);
     if (options.onRemove) {
         actions.appendChild(el("button", { type: "button", className: "afSmallButton", text: "Remove", "aria-label": "Remove override for " + (setting.title || key), onclick: options.onRemove }));

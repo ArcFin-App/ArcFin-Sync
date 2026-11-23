@@ -96,6 +96,12 @@ public class ArcfinSyncAdminController : ControllerBase
             return BadRequest("The advanced configuration is too long.");
         }
 
+        // The configuration is saved as XML, which can't hold most control characters.
+        if (body.AdvancedYamlConfig is { } yaml && yaml.Any(c => char.IsControl(c) && c is not ('\t' or '\n' or '\r')))
+        {
+            return BadRequest("The advanced configuration can't contain control characters.");
+        }
+
         PolicyService.UpdateConfig(config =>
         {
             config.NotificationsEnabled = body.NotificationsEnabled ?? config.NotificationsEnabled;

@@ -67,7 +67,7 @@ public static class PolicyService
 
         var result = new SettingsPolicy();
         var existingGlobal = existing.Settings.Select(s => s.Key).ToHashSet(StringComparer.Ordinal);
-        var (global, error) = CleanEntries(schema, incoming.Settings, existingGlobal);
+        var (global, error) = CleanEntries(schema, incoming.Settings, existingGlobal, isGlobal: true);
         if (error is not null)
         {
             return (null, error);
@@ -89,7 +89,7 @@ public static class PolicyService
 
             var existingUser = existing.Users.FirstOrDefault(u => u.UserId == user.UserId)?.Settings.Select(s => s.Key).ToHashSet(StringComparer.Ordinal)
                                ?? new HashSet<string>(StringComparer.Ordinal);
-            var (entries, userError) = CleanEntries(schema, user.Settings, existingUser);
+            var (entries, userError) = CleanEntries(schema, user.Settings, existingUser, isGlobal: false);
             if (userError is not null)
             {
                 return (null, userError);
@@ -104,7 +104,7 @@ public static class PolicyService
         return (result, null);
     }
 
-    private static (List<PolicySetting>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<PolicySetting>? entries, HashSet<string> carried)
+    private static (List<PolicySetting>? Entries, string? Error) CleanEntries(SettingsSchema schema, List<PolicySetting>? entries, HashSet<string> carried, bool isGlobal)
     {
         var result = new List<PolicySetting>();
         if (entries is null)
@@ -142,6 +142,11 @@ public static class PolicyService
             }
 
             var value = entry.DefaultValue;
+            if (value is not null && value.Any(char.IsControl))
+            {
+                return (null, $"The value of {entry.Key} can't contain control characters.");
+            }
+
             if (value is not null && value.Length > SettingsRules.MaxValueLength)
             {
                 return (null, $"The value of {entry.Key} is longer than {SettingsRules.MaxValueLength} characters.");
@@ -157,6 +162,14 @@ public static class PolicyService
                 {
                     return (null, setting.Type == "bool" ? $"{entry.Key} must be true or false." : $"{entry.Key} must be a whole number.");
                 }
+            }
+
+            // A server-wide lock needs a value to pin, or every device would keep whatever it has.
+            // Unset, it locks to the app's own default. A user's override with no value takes
+            // the server-wide one instead.
+            if (isGlobal && entry.Locked && value is null)
+            {
+                value = setting?.Default;
             }
 
             result.Add(new PolicySetting { Key = entry.Key, DefaultValue = value, Locked = entry.Locked });
