@@ -179,7 +179,9 @@ public class ArcfinSyncController : ControllerBase
 
     /// <summary>
     /// Saves synced values. With Replace, this device's settings become everyone's: each unlocked
-    /// synced setting it didn't send goes back to its default.
+    /// synced setting its platform shows that it didn't send goes back to its default. The
+    /// platform comes from this device's record (PUT Devices/Current); without one, Replace
+    /// clears nothing.
     /// </summary>
     [HttpPut("Sync")]
     [Authorize]
@@ -406,11 +408,12 @@ public class ArcfinSyncController : ControllerBase
         return SettingsStore.Current.WithUser(user.Id, files =>
         {
             var values = files.Values;
-            if (SettingsRules.Apply(schema, values, filtered, locked, replace))
+            var deviceId = string.IsNullOrEmpty(auth.DeviceId) || auth.DeviceId.Length > SettingsRules.MaxDeviceIdLength ? null : auth.DeviceId;
+            var device = deviceId is not null && files.Devices.TryGetValue(deviceId, out var record) ? record : null;
+            if (SettingsRules.Apply(schema, values, filtered, locked, replace, device?.Platform))
             {
                 files.ValuesChanged();
-                var deviceId = string.IsNullOrEmpty(auth.DeviceId) || auth.DeviceId.Length > SettingsRules.MaxDeviceIdLength ? null : auth.DeviceId;
-                var deviceName = deviceId is not null && files.Devices.TryGetValue(deviceId, out var device) ? device.DisplayName : auth.Device;
+                var deviceName = device?.DisplayName ?? auth.Device;
                 files.Meta.UpdatedAt = DateTime.UtcNow;
                 files.Meta.UpdatedByDeviceId = deviceId;
                 files.Meta.UpdatedByDeviceName = deviceName is null ? null : Truncate(deviceName, SettingsRules.MaxFieldLength);

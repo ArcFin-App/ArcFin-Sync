@@ -60,7 +60,9 @@ public sealed class SettingsSchema
         return setting.Type switch
         {
             "bool" => value is "true" or "false",
-            "int" => long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
+            // An int with fixed choices only takes one of them.
+            "int" => long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _)
+                     && (setting.Options is not { Count: > 0 } || setting.Options.Any(o => o.Value == value)),
             _ => true
         };
     }
@@ -115,4 +117,20 @@ public sealed class SchemaSetting
 
     [JsonPropertyName("default")]
     public string? Default { get; set; }
+
+    [JsonPropertyName("options")]
+    public List<SchemaOption>? Options { get; set; }
+
+    /// <summary>Where the app shows the setting; empty means everywhere.</summary>
+    [JsonPropertyName("platforms")]
+    public List<string>? Platforms { get; set; }
+}
+
+public sealed class SchemaOption
+{
+    [JsonPropertyName("value")]
+    public string Value { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
 }

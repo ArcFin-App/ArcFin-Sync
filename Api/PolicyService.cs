@@ -160,7 +160,9 @@ public static class PolicyService
                 }
                 else if (!SettingsSchema.IsValidValue(setting, value))
                 {
-                    return (null, setting.Type == "bool" ? $"{entry.Key} must be true or false." : $"{entry.Key} must be a whole number.");
+                    return (null, setting.Type == "bool" ? $"{entry.Key} must be true or false."
+                        : setting.Options is { Count: > 0 } ? $"{entry.Key} must be one of {string.Join(", ", setting.Options.Select(o => o.Value))}."
+                        : $"{entry.Key} must be a whole number.");
                 }
             }
 

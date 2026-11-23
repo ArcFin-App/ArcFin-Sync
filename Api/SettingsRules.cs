@@ -27,6 +27,21 @@ public static class SettingsRules
     public static readonly string[] Platforms = { "iOS", "iPadOS", "macOS", "tvOS" };
     public static readonly string[] SyncModes = { "automatic", "ask", "off" };
 
+    /// <summary>Server connection settings a Replace never clears.</summary>
+    public static readonly string[] NeverReplaced = { "seerrURL", SeerrUsername, SeerrAuthMethod };
+
+    /// <summary>The schema's platform name for a device platform: iPadOS shows what iOS shows.</summary>
+    public static string? SchemaPlatform(string? devicePlatform)
+    {
+        return devicePlatform switch
+        {
+            "iOS" or "iPadOS" => "iOS",
+            "macOS" => "macOS",
+            "tvOS" => "tvOS",
+            _ => null
+        };
+    }
+
     /// <summary>Size limits for a key/value payload; null when it's within them.</summary>
     public static string? CheckPayload(IReadOnlyDictionary<string, string?>? values)
     {
@@ -262,12 +277,14 @@ public static class SettingsRules
 
     /// <summary>
     /// Applies incoming values to the stored map. Locked keys are never stored; a null value
-    /// clears the key. With <paramref name="replace"/>, every unlocked synced key not in the
-    /// payload is cleared too. Keys that aren't in the schema are kept as they were.
+    /// clears the key. With <paramref name="replace"/>, each unlocked synced key the sending
+    /// device's platform shows but that isn't in the payload is cleared too: a device only sends
+    /// what it shows, so settings of other platforms stay. Server connection keys are never
+    /// cleared, and with no known platform nothing is. Keys that aren't in the schema are kept.
     /// Returns whether anything changed.
     /// </summary>
     public static bool Apply(SettingsSchema schema, Dictionary<string, string?> stored, IReadOnlyDictionary<string, string?> incoming,
-                             HashSet<string> lockedKeys, bool replace)
+                             HashSet<string> lockedKeys, bool replace, string? platform = null)
     {
         var changed = false;
         foreach (var (key, value) in incoming)
@@ -288,11 +305,14 @@ public static class SettingsRules
             }
         }
 
-        if (replace)
+        var schemaPlatform = SchemaPlatform(platform);
+        if (replace && schemaPlatform is not null)
         {
             foreach (var setting in schema.Settings)
             {
-                if (setting.Scope == SettingsSchema.ScopeSynced && !lockedKeys.Contains(setting.Key) && !incoming.ContainsKey(setting.Key))
+                var shownHere = setting.Platforms is not { Count: > 0 } || setting.Platforms.Contains(schemaPlatform);
+                if (setting.Scope == SettingsSchema.ScopeSynced && shownHere && !NeverReplaced.Contains(setting.Key)
+                    && !lockedKeys.Contains(setting.Key) && !incoming.ContainsKey(setting.Key))
                 {
                     changed |= stored.Remove(setting.Key);
                 }

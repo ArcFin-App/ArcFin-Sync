@@ -15,7 +15,10 @@ public class SettingsRulesTests
       "groups": [ { "id": "playback", "title": "Playback" } ],
       "settings": [
         { "key": "skipIntro", "type": "bool", "scope": "synced", "group": "playback", "title": "Skip Intro", "default": "false" },
-        { "key": "skipForwardSeconds", "type": "int", "scope": "synced", "group": "playback", "title": "Skip Forward" },
+        { "key": "skipForwardSeconds", "type": "int", "scope": "synced", "group": "playback", "title": "Skip Forward",
+          "options": [ { "value": "10", "title": "10 seconds" }, { "value": "15", "title": "15 seconds" }, { "value": "30", "title": "30 seconds" } ] },
+        { "key": "tvOnly", "type": "bool", "scope": "synced", "title": "TV only", "platforms": [ "tvOS" ] },
+        { "key": "seerrURL", "type": "string", "scope": "synced", "title": "Seerr URL", "platforms": [ "iOS", "macOS", "tvOS" ] },
         { "key": "videoQuality", "type": "string", "scope": "synced", "group": "playback", "title": "Quality",
           "options": [ { "value": "Max", "title": "Max" } ] },
         { "key": "seerrAuthMethod", "type": "string", "scope": "synced", "title": "Seerr Account Type" },
@@ -149,15 +152,26 @@ public class SettingsRulesTests
     [Fact]
     public void ApplyNeverStoresLockedKeysAndReplaceClearsTheRest()
     {
-        var stored = new Dictionary<string, string?> { ["skipIntro"] = "true", ["skipForwardSeconds"] = "30", ["videoQuality"] = "Max", ["legacyKey"] = "keep" };
+        var stored = new Dictionary<string, string?>
+        {
+            ["skipIntro"] = "true", ["skipForwardSeconds"] = "30", ["videoQuality"] = "Max", ["legacyKey"] = "keep",
+            ["tvOnly"] = "true", ["seerrURL"] = "https://seerr", ["seerrAuthMethod"] = "local"
+        };
         var locked = new HashSet<string> { "videoQuality" };
         var incoming = SettingsRules.FilterToSchema(Schema, new Dictionary<string, string?> { ["skipIntro"] = "false", ["videoQuality"] = "480p" }, SettingsSchema.ScopeSynced);
 
-        Assert.True(SettingsRules.Apply(Schema, stored, incoming, locked, replace: true));
+        var unknownPlatform = new Dictionary<string, string?>(stored);
+        SettingsRules.Apply(Schema, unknownPlatform, incoming, locked, replace: true, platform: null);
+        Assert.Equal("30", unknownPlatform["skipForwardSeconds"]);
+
+        Assert.True(SettingsRules.Apply(Schema, stored, incoming, locked, replace: true, platform: "iPadOS"));
         Assert.Equal("false", stored["skipIntro"]);
         Assert.False(stored.ContainsKey("skipForwardSeconds"));
         Assert.Equal("Max", stored["videoQuality"]);
         Assert.Equal("keep", stored["legacyKey"]);
+        Assert.Equal("true", stored["tvOnly"]);
+        Assert.Equal("https://seerr", stored["seerrURL"]);
+        Assert.Equal("local", stored["seerrAuthMethod"]);
 
         Assert.False(SettingsRules.Apply(Schema, stored, incoming, locked, replace: false));
 
@@ -173,6 +187,7 @@ public class SettingsRulesTests
         {
             ["skipIntro"] = "yes",
             ["skipForwardSeconds"] = "15",
+            ["tvOnly"] = "nope",
             ["videoQuality"] = "anything",
             ["codecAllowHEVCDirectPlay"] = "true",
             ["accessToken"] = "secret"
@@ -253,6 +268,8 @@ public class SettingsRulesTests
         Assert.Equal("false", lockedNoValue.Settings[0].DefaultValue);
         Assert.Null(lockedNoValue.Users[0].Settings[0].DefaultValue);
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("skipIntro", "yes", true)), existing, Known).Error);
+        Assert.NotNull(PolicyService.Validate(Schema, Policy(P("skipForwardSeconds", "12", true)), existing, Known).Error);
+        Assert.Null(PolicyService.Validate(Schema, Policy(P("skipForwardSeconds", "15", true)), existing, Known).Error);
         Assert.NotNull(PolicyService.Validate(Schema, Policy(P("skipIntro", "true", true), P("skipIntro", "false", true)), existing, Known).Error);
         Assert.NotNull(PolicyService.Validate(Schema, new SettingsPolicy { Users = { new UserPolicyOverride { UserId = Bob } } }, existing, Known).Error);
     }
