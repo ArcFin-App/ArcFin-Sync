@@ -34,6 +34,14 @@
       "title": "Notifications"
     },
     {
+      "id": "library",
+      "title": "Library"
+    },
+    {
+      "id": "navigation",
+      "title": "Navigation"
+    },
+    {
       "id": "integrations",
       "title": "Integrations"
     },
@@ -2094,6 +2102,527 @@
           "title": "Local Account"
         }
       ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "defaultPlaybackSpeed",
+      "type": "double",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Default Speed",
+      "detail": "The speed new videos start at.",
+      "default": "1.0",
+      "options": [
+        {
+          "value": "0.75",
+          "title": "0.75×"
+        },
+        {
+          "value": "1.0",
+          "title": "1.0×"
+        },
+        {
+          "value": "1.25",
+          "title": "1.25×"
+        },
+        {
+          "value": "1.5",
+          "title": "1.5×"
+        },
+        {
+          "value": "1.75",
+          "title": "1.75×"
+        },
+        {
+          "value": "2.0",
+          "title": "2.0×"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "holdSpeedRate",
+      "type": "double",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Hold Speed",
+      "default": "2.0",
+      "options": [
+        {
+          "value": "1.5",
+          "title": "1.5×"
+        },
+        {
+          "value": "2.0",
+          "title": "2.0×"
+        },
+        {
+          "value": "3.0",
+          "title": "3.0×"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "dialogueBoost",
+      "type": "bool",
+      "scope": "synced",
+      "group": "playback",
+      "title": "Dialogue Boost",
+      "detail": "Set from the player's audio menu.",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "hiddenLibraryIDs",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Hidden Libraries",
+      "detail": "Library ids hidden from Browse, comma-separated.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "homeShelfOrder",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Home Shelf Order",
+      "detail": "Home's rows in order, comma-separated; empty is the default order.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "homeShelfActive",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Home Shelves Shown",
+      "detail": "The rows Home shows, comma-separated; empty is the default set.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "seerrRegionOverride",
+      "type": "string",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Country",
+      "detail": "For streaming services; empty uses Seerr's or this device's region.",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryGridDensity",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Grid Density",
+      "default": "normal",
+      "options": [
+        {
+          "value": "compact",
+          "title": "Compact"
+        },
+        {
+          "value": "normal",
+          "title": "Normal"
+        },
+        {
+          "value": "comfortable",
+          "title": "Comfortable"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "collectionSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Collection Sort",
+      "default": "Release Order",
+      "options": [
+        {
+          "value": "Release Order",
+          "title": "Release Order"
+        },
+        {
+          "value": "Title",
+          "title": "Title"
+        },
+        {
+          "value": "Rating",
+          "title": "Rating"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "collectionShowsGrid",
+      "type": "bool",
+      "scope": "synced",
+      "group": "library",
+      "title": "Collections as a Grid",
+      "default": "false",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "statsPeriod",
+      "type": "string",
+      "scope": "synced",
+      "group": "library",
+      "title": "Stats Period",
+      "default": "month",
+      "options": [
+        {
+          "value": "week",
+          "title": "Week"
+        },
+        {
+          "value": "month",
+          "title": "Month"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "allTime",
+          "title": "All Time"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryScreensaverEnabled",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Library Screensaver",
+      "default": "true",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "libraryScreensaverMinutes",
+      "type": "int",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Start After",
+      "default": "3",
+      "options": [
+        {
+          "value": "2",
+          "title": "2 Minutes"
+        },
+        {
+          "value": "3",
+          "title": "3 Minutes"
+        },
+        {
+          "value": "5",
+          "title": "5 Minutes"
+        },
+        {
+          "value": "10",
+          "title": "10 Minutes"
+        }
+      ],
+      "min": 2,
+      "max": 10,
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.songSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Song Sort",
+      "default": "name",
+      "options": [
+        {
+          "value": "name",
+          "title": "Name"
+        },
+        {
+          "value": "artist",
+          "title": "Artist"
+        },
+        {
+          "value": "album",
+          "title": "Album"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "dateAdded",
+          "title": "Date Added"
+        },
+        {
+          "value": "playCount",
+          "title": "Play Count"
+        },
+        {
+          "value": "datePlayed",
+          "title": "Date Played"
+        },
+        {
+          "value": "random",
+          "title": "Random"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.albumSort",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Album Sort",
+      "default": "name",
+      "options": [
+        {
+          "value": "name",
+          "title": "Name"
+        },
+        {
+          "value": "artist",
+          "title": "Artist"
+        },
+        {
+          "value": "album",
+          "title": "Album"
+        },
+        {
+          "value": "year",
+          "title": "Year"
+        },
+        {
+          "value": "dateAdded",
+          "title": "Date Added"
+        },
+        {
+          "value": "playCount",
+          "title": "Play Count"
+        },
+        {
+          "value": "datePlayed",
+          "title": "Date Played"
+        },
+        {
+          "value": "random",
+          "title": "Random"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "defaultExternalPlayer",
+      "type": "string",
+      "scope": "device",
+      "group": "playback",
+      "title": "Default Player",
+      "detail": "An app installed on this device; empty is Arcfin.",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsIgnored",
+      "type": "json",
+      "scope": "device",
+      "group": "downloads",
+      "title": "Ignored by Smart Downloads",
+      "detail": "Titles Smart Downloads leaves alone: an object of id to name.",
+      "format": "json",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "smartDownloadsKeptShows",
+      "type": "json",
+      "scope": "device",
+      "group": "downloads",
+      "title": "Shows Kept Downloaded",
+      "detail": "An object of series id to its name and episode count.",
+      "format": "json",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "streamingServices",
+      "type": "json",
+      "scope": "device",
+      "group": "appearance",
+      "title": "Streaming Services",
+      "detail": "The streaming service rows on Home, as a JSON list.",
+      "format": "json",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "bottomNavOrder",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Tab Order",
+      "detail": "Tabs in order, comma-separated; empty is the default order.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "bottomNavActive",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Tabs Shown",
+      "detail": "The tabs shown, comma-separated; empty is the default set.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "launchTab",
+      "type": "string",
+      "scope": "device",
+      "group": "navigation",
+      "title": "Open To",
+      "default": "home",
+      "options": [
+        {
+          "value": "home",
+          "title": "Home"
+        },
+        {
+          "value": "browse",
+          "title": "Browse"
+        },
+        {
+          "value": "stats",
+          "title": "Stats"
+        },
+        {
+          "value": "requests",
+          "title": "Discover"
+        },
+        {
+          "value": "watchlist",
+          "title": "Watchlist"
+        },
+        {
+          "value": "admin",
+          "title": "Admin"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "music.libraryRowOrder",
+      "type": "string",
+      "scope": "device",
+      "group": "music",
+      "title": "Music Library Rows",
+      "detail": "The music library's rows in order, comma-separated.",
+      "format": "csv",
+      "default": "",
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "music.libraryRowsHidden",
+      "type": "string",
+      "scope": "device",
+      "group": "music",
+      "title": "Hidden Music Library Rows",
+      "detail": "Music library rows hidden, comma-separated.",
+      "format": "csv",
+      "default": "",
       "platforms": [
         "iOS",
         "macOS",
