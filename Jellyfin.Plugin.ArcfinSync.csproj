@@ -19,12 +19,8 @@
     <Compile Remove="tests/**" />
     <None Remove="tests/**" />
     <EmbeddedResource Include="Schema\settings-schema.json" />
-    <EmbeddedResource Include="Configuration\general.html" />
-    <EmbeddedResource Include="Configuration\General.js" />
-    <EmbeddedResource Include="Configuration\lockedSettings.html" />
-    <EmbeddedResource Include="Configuration\LockedSettings.js" />
-    <EmbeddedResource Include="Configuration\advanced.html" />
-    <EmbeddedResource Include="Configuration\Advanced.js" />
+    <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Configuration\ArcfinSync.js" />
   </ItemGroup>
 
 </Project>
