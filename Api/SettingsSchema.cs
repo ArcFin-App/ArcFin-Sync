@@ -64,7 +64,7 @@ public sealed class SettingsSchema
             "int" => long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _)
                      && (setting.Options is not { Count: > 0 } || setting.Options.Any(o => o.Value == value)),
             "double" => IsValidDouble(setting, value),
-            _ => setting.Format != "json" || IsJsonContainer(value)
+            _ => !setting.IsJson || IsJsonContainer(value)
         };
     }
 
@@ -160,9 +160,13 @@ public sealed class SchemaSetting
     [JsonPropertyName("max")]
     public double? Max { get; set; }
 
-    /// <summary>"json" for a string holding a JSON array or object.</summary>
+    /// <summary>"json" for a string holding a JSON array or object; "csv" for a comma-separated list.</summary>
     [JsonPropertyName("format")]
     public string? Format { get; set; }
+
+    /// <summary>A JSON array or object on the wire, whether the schema says so by type or by format.</summary>
+    [JsonIgnore]
+    public bool IsJson => Type == "json" || Format == "json";
 
     /// <summary>Where the app shows the setting; empty means everywhere.</summary>
     [JsonPropertyName("platforms")]

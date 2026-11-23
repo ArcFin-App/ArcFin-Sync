@@ -27,7 +27,8 @@ public class SettingsRulesTests
         { "key": "playbackSpeed", "type": "double", "scope": "synced", "title": "Speed", "min": 0.5, "max": 2 },
         { "key": "subtitleScale", "type": "double", "scope": "synced", "title": "Scale",
           "options": [ { "value": "0.75", "title": "Small" }, { "value": "1.0", "title": "Normal" } ] },
-        { "key": "homeShelves", "type": "string", "format": "json", "scope": "synced", "title": "Home shelves" }
+        { "key": "homeShelves", "type": "string", "format": "json", "scope": "synced", "title": "Home shelves" },
+        { "key": "streamingServices", "type": "json", "scope": "device", "title": "Streaming services" }
       ]
     }
     """);
@@ -214,6 +215,9 @@ public class SettingsRulesTests
     [InlineData("homeShelves", "{\"a\":1}", true)]
     [InlineData("homeShelves", "\"just a string\"", false)]
     [InlineData("homeShelves", "[1,", false)]
+    [InlineData("streamingServices", "[{\"id\":\"netflix\"}]", true)]
+    [InlineData("streamingServices", "netflix", false)]
+    [InlineData("subtitleScale", "1.0", true)]
     public void DoubleAndJsonValues(string key, string value, bool valid)
     {
         Assert.Equal(valid, SettingsSchema.IsValidValue(Schema.Find(key)!, value));

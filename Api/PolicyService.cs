@@ -98,7 +98,7 @@ public static class PolicyService
             return $"{key} must be true or false.";
         }
 
-        if (setting.Format == "json")
+        if (setting.IsJson)
         {
             return $"{key} must be a JSON array or object.";
         }
@@ -169,7 +169,7 @@ public static class PolicyService
 
             if (setting is not null && value is not null)
             {
-                if (value.Length == 0 && (setting.Type is "bool" or "int" or "double" || setting.Format == "json"))
+                if (value.Length == 0 && (setting.Type is "bool" or "int" or "double" || setting.IsJson))
                 {
                     value = null;
                 }

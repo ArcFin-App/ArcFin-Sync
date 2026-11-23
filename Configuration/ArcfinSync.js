@@ -82,7 +82,7 @@ function settingTitle(key) {
 function describeValue(setting, value) {
     if (value === null || value === undefined) { return "Not set"; }
     if (setting && setting.type === "bool") { return value === "true" ? "On" : "Off"; }
-    if (setting && setting.format === "json") { return value.length > 80 ? value.substring(0, 77) + "…" : value; }
+    if (isJsonSetting(setting)) { return value.length > 80 ? value.substring(0, 77) + "…" : value; }
     if (setting && setting.options) {
         for (var i = 0; i < setting.options.length; i++) {
             if (setting.options[i].value === value) { return setting.options[i].title || value; }
@@ -99,7 +99,7 @@ function appDefaultLabel(setting) {
 // A control for a setting's default value. "" in the control means no default.
 function valueControl(setting, value, onChange, unsetLabel) {
     unsetLabel = unsetLabel || appDefaultLabel(setting);
-    if (setting && setting.format === "json") { return jsonControl(setting, value, onChange, unsetLabel); }
+    if (isJsonSetting(setting)) { return jsonControl(setting, value, onChange, unsetLabel); }
     var control;
     var type = setting ? setting.type : "string";
     if (type === "bool" || (setting && setting.options && setting.options.length)) {
@@ -142,6 +142,10 @@ function valueControl(setting, value, onChange, unsetLabel) {
         onChange(v);
     });
     return control;
+}
+
+function isJsonSetting(setting) {
+    return !!setting && (setting.type === "json" || setting.format === "json");
 }
 
 // A setting the app keeps as a JSON array or object: a short preview, and raw JSON to edit.
