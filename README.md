@@ -17,7 +17,7 @@ A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). I
 
 ## Status
 
-v0.4.0 in development. Installable via the repository manifest (manifest.json) once the release is published on Gitea.
+v0.4.0, for Arcfin 0.5.0. Install it from the repository manifest below.
 
 ## Requirements
 
