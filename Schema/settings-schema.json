@@ -1785,6 +1785,18 @@
       ]
     },
     {
+      "key": "topShelfTrailers",
+      "type": "bool",
+      "scope": "synced",
+      "group": "appearance",
+      "title": "Top Shelf Trailers",
+      "detail": "Plays a title's trailer in the Top Shelf when you rest on it there, if the server has one. Apple TV decides when it has sound.",
+      "default": "true",
+      "platforms": [
+        "tvOS"
+      ]
+    },
+    {
       "key": "modernHome",
       "type": "bool",
       "scope": "synced",
