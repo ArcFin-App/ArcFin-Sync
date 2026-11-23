@@ -257,10 +257,29 @@ public class SettingsRulesTests
     [Fact]
     public void PayloadLimits()
     {
-        Assert.Null(SettingsRules.CheckPayload(new Dictionary<string, string?> { ["a"] = new string('x', 4096) }));
-        Assert.NotNull(SettingsRules.CheckPayload(new Dictionary<string, string?> { ["a"] = new string('x', 4097) }));
+        Assert.Null(SettingsRules.CheckPayload(new Dictionary<string, string?> { ["a"] = new string('x', 4097) }));
         Assert.NotNull(SettingsRules.CheckPayload(Enumerable.Range(0, 513).ToDictionary(i => $"k{i}", _ => (string?)"v")));
-        Assert.NotNull(SettingsRules.CheckPayload(new Dictionary<string, string?> { [new string('k', 129)] = "v" }));
+    }
+
+    [Fact]
+    public void ASettingTooLongIsSkippedNotTheRest()
+    {
+        var kept = SettingsRules.WithinLimits(new Dictionary<string, string?>
+        {
+            ["a"] = new string('x', 4096), ["b"] = new string('x', 4097), [new string('k', 129)] = "v", [""] = "v", ["c"] = null
+        });
+        Assert.Equal(new[] { "a", "c" }, kept.Keys.OrderBy(k => k));
+    }
+
+    [Fact]
+    public void ReplaceKeepsASettingThatWasSentButSkipped()
+    {
+        var stored = new Dictionary<string, string?> { ["skipIntro"] = "true", ["skipForwardSeconds"] = "30" };
+        var sent = new Dictionary<string, string?> { ["skipIntro"] = "false", ["skipForwardSeconds"] = new string('9', 5000) };
+        var incoming = SettingsRules.FilterToSchema(Schema, SettingsRules.WithinLimits(sent), SettingsSchema.ScopeSynced);
+        Assert.True(SettingsRules.Apply(Schema, stored, incoming, new HashSet<string>(), replace: true, platform: "iOS", sent: sent.Keys));
+        Assert.Equal("false", stored["skipIntro"]);
+        Assert.Equal("30", stored["skipForwardSeconds"]);
     }
 
     [Fact]

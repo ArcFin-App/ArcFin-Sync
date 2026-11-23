@@ -266,7 +266,9 @@ public class ArcfinSyncController : ControllerBase
             return BadRequest(tooBig);
         }
 
-        var snapshot = body.Settings is null ? null : SettingsRules.FilterToSchema(SettingsSchema.Embedded, body.Settings, null);
+        var snapshot = body.Settings is null
+            ? null
+            : SettingsRules.FilterToSchema(SettingsSchema.Embedded, SettingsRules.WithinLimits(body.Settings), null);
         var jellyfinName = Truncate(auth.Device ?? string.Empty, SettingsRules.MaxFieldLength);
         var now = DateTime.UtcNow;
 
@@ -401,7 +403,7 @@ public class ArcfinSyncController : ControllerBase
                                                           IReadOnlyDictionary<string, string?> incoming, bool replace)
     {
         var schema = SettingsSchema.Embedded;
-        var filtered = SettingsRules.FilterToSchema(schema, incoming, SettingsSchema.ScopeSynced);
+        var filtered = SettingsRules.FilterToSchema(schema, SettingsRules.WithinLimits(incoming), SettingsSchema.ScopeSynced);
         var locked = SettingsRules.LockedKeys(rules);
         return SettingsStore.Current.WithUser(user.Id, files =>
         {
@@ -413,7 +415,7 @@ public class ArcfinSyncController : ControllerBase
 
             var deviceId = string.IsNullOrEmpty(auth.DeviceId) || auth.DeviceId.Length > SettingsRules.MaxDeviceIdLength ? null : auth.DeviceId;
             var device = deviceId is not null && files.Devices.TryGetValue(deviceId, out var record) ? record : null;
-            if (SettingsRules.Apply(schema, values, filtered, locked, replace, device?.Platform))
+            if (SettingsRules.Apply(schema, values, filtered, locked, replace, device?.Platform, incoming.Keys))
             {
                 files.ValuesChanged();
                 var deviceName = device?.DisplayName ?? auth.Device;

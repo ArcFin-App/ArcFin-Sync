@@ -41,33 +41,33 @@ public static class SettingsRules
         };
     }
 
-    /// <summary>Size limits for a key/value payload; null when it's within them.</summary>
+    /// <summary>The limit on how many settings one request has; null when it's within it.</summary>
     public static string? CheckPayload(IReadOnlyDictionary<string, string?>? values)
     {
+        return values is not null && values.Count > MaxKeys ? $"At most {MaxKeys} settings per request." : null;
+    }
+
+    /// <summary>
+    /// The settings whose key and value are within the size limits. One that isn't is skipped
+    /// rather than refusing the rest: a list that grows with use mustn't stop a device syncing.
+    /// </summary>
+    public static Dictionary<string, string?> WithinLimits(IReadOnlyDictionary<string, string?>? values)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
         if (values is null)
         {
-            return null;
-        }
-
-        if (values.Count > MaxKeys)
-        {
-            return $"At most {MaxKeys} settings per request.";
+            return result;
         }
 
         foreach (var (key, value) in values)
         {
-            if (key.Length == 0 || key.Length > MaxKeyLength)
+            if (key.Length > 0 && key.Length <= MaxKeyLength && (value is null || value.Length <= MaxValueLength))
             {
-                return "A setting key is empty or too long.";
-            }
-
-            if (value is not null && value.Length > MaxValueLength)
-            {
-                return $"The value of {key} is longer than {MaxValueLength} characters.";
+                result[key] = value;
             }
         }
 
-        return null;
+        return result;
     }
 
     /// <summary>
@@ -269,11 +269,14 @@ public static class SettingsRules
     /// device's platform shows but that isn't in the payload is cleared too: a device only sends
     /// what it shows, so settings of other platforms stay. Server connection keys are never
     /// cleared, and with no known platform nothing is. Keys that aren't in the schema are kept.
-    /// Returns whether anything changed.
+    /// <paramref name="sent"/>: every key the device sent, including ones skipped as too long or
+    /// of the wrong type, which a Replace keeps as they are. Returns whether anything changed.
     /// </summary>
     public static bool Apply(SettingsSchema schema, Dictionary<string, string?> stored, IReadOnlyDictionary<string, string?> incoming,
-                             HashSet<string> lockedKeys, bool replace, string? platform = null)
+                             HashSet<string> lockedKeys, bool replace, string? platform = null, IEnumerable<string>? sent = null)
     {
+        var sentKeys = new HashSet<string>(incoming.Keys, StringComparer.Ordinal);
+        sentKeys.UnionWith(sent ?? Array.Empty<string>());
         var changed = false;
         foreach (var (key, value) in incoming)
         {
@@ -300,7 +303,7 @@ public static class SettingsRules
             {
                 var shownHere = setting.Platforms is not { Count: > 0 } || setting.Platforms.Contains(schemaPlatform);
                 if (setting.Scope == SettingsSchema.ScopeSynced && shownHere && !NeverReplaced.Contains(setting.Key)
-                    && !lockedKeys.Contains(setting.Key) && !incoming.ContainsKey(setting.Key))
+                    && !lockedKeys.Contains(setting.Key) && !sentKeys.Contains(setting.Key))
                 {
                     changed |= stored.Remove(setting.Key);
                 }
