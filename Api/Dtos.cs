@@ -12,7 +12,14 @@ public class StatusDto
 
     public int ApiVersion { get; set; }
 
+    /// <summary>What this plugin can do: the admin screens to show.</summary>
     public List<string> Features { get; set; } = new();
+
+    /// <summary>
+    /// The optional features an admin has turned on: what everyone else's Arcfin shows. Each is
+    /// off until turned on, so installing the plugin changes nothing by itself.
+    /// </summary>
+    public List<string> Enabled { get; set; } = new();
 }
 
 public class SyncedSettingDto

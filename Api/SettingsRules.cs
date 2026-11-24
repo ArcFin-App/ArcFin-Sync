@@ -21,6 +21,7 @@ public static class SettingsRules
     public const int MaxFieldLength = 128;
 
     public const string SeerrUsername = "seerrUsername";
+    public const string SeerrUrl = "seerrURL";
     public const string SeerrAuthMethod = "seerrAuthMethod";
 
     public static readonly string[] Platforms = { "iOS", "iPadOS", "macOS", "tvOS" };
@@ -106,7 +107,27 @@ public static class SettingsRules
     /// the user's extra keys. An override's lock, when it has one, replaces the global lock (so it
     /// can also unlock); without one, and for its default, the global one applies.
     /// </summary>
-    public static List<EffectiveRule> RulesForUser(SettingsPolicy policy, Guid userId)
+    public static List<EffectiveRule> RulesForUser(SettingsPolicy policy, Guid userId, string? seerrPublicUrl = null)
+    {
+        var rules = RulesForUserFromPolicy(policy, userId);
+        // Seerr's public address from Seerr & TMDB is everyone's seerrURL unless the admin set one.
+        if (!string.IsNullOrWhiteSpace(seerrPublicUrl))
+        {
+            var index = rules.FindIndex(r => r.Key == SeerrUrl);
+            if (index < 0)
+            {
+                rules.Add(new EffectiveRule(SeerrUrl, seerrPublicUrl, false));
+            }
+            else if (string.IsNullOrEmpty(rules[index].Value))
+            {
+                rules[index] = rules[index] with { Value = seerrPublicUrl };
+            }
+        }
+
+        return rules;
+    }
+
+    private static List<EffectiveRule> RulesForUserFromPolicy(SettingsPolicy policy, Guid userId)
     {
         var overrides = policy.Users.FirstOrDefault(u => u.UserId == userId)?.Settings ?? new List<UserPolicySetting>();
         var overrideByKey = new Dictionary<string, UserPolicySetting>(StringComparer.Ordinal);
@@ -152,7 +173,7 @@ public static class SettingsRules
     public static bool IsSeerrUsernameForced(IEnumerable<EffectiveRule> rules)
     {
         var authMethod = rules.LastOrDefault(r => r.Key == SeerrAuthMethod);
-        return authMethod is { Locked: true, Value: "jellyfin" };
+        return authMethod is { Locked: true, Value: "jellyfin" or "quickConnect" };
     }
 
     public static HashSet<string> LockedKeys(List<EffectiveRule> rules)

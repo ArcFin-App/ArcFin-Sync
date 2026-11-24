@@ -13,7 +13,12 @@
                 <button type="button" class="afTab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
                 <button type="button" class="afTab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
                 <button type="button" class="afTab" role="tab" data-tab="users" aria-selected="false">Users &amp; Devices</button>
-                <button type="button" class="afTab" role="tab" data-tab="pick" aria-selected="false">Pick Together</button>
+                <button type="button" class="afTab" role="tab" data-tab="pick" aria-selected="false">Features</button>
+                <button type="button" class="afTab" role="tab" data-tab="integrations" aria-selected="false">Seerr &amp; TMDB</button>
+                <button type="button" class="afTab" role="tab" data-tab="security" aria-selected="false">Security</button>
+                <button type="button" class="afTab" role="tab" data-tab="limits" aria-selected="false">Watch Time</button>
+                <button type="button" class="afTab" role="tab" data-tab="household" aria-selected="false">Household</button>
+                <button type="button" class="afTab" role="tab" data-tab="downloads" aria-selected="false">Downloads</button>
             </div>
 
             <section class="afPanel" data-panel="overview" role="tabpanel">
@@ -24,7 +29,13 @@
                         <li>Arcfin keeps each user's settings in step across their iPhone, iPad, Mac and Apple TV.</li>
                         <li>On <b>Settings</b>, give any setting a default (used until someone picks their own) or lock it (everyone gets your value and can't change it).</li>
                         <li>On <b>Users &amp; Devices</b>, see every device signed in with Arcfin, rename or forget one, and give a single user their own defaults and locks.</li>
-                        <li>On <b>Pick Together</b>, choose who can use it: people swipe through titles on iPhone and iPad until they agree on one to watch.</li>
+                        <li>On <b>Features</b>, choose who can use Pick Together (swipe through titles until everyone agrees) and watch parties (join with a code, now or at a time the host picks, then watch together), turn the recommendation rows on Home on or off, and let people hide titles from Continue Watching and Next Up.</li>
+                        <li>On <b>Seerr &amp; TMDB</b>, add their keys once for everyone. They stay on this server, encrypted, and Arcfin uses Seerr through it as each person, with their own Seerr limits. Requests made while Seerr is down are sent when it's back.</li>
+                        <li>On <b>Security</b>, turn on signed commands, then clear a profile's PIN or lock and unlock a profile on all its devices. PINs never leave the devices; Arcfin only carries out commands signed with this server's key.</li>
+                        <li>On <b>Watch Time</b>, give anyone daily minutes and a bedtime. The server counts time from every app and stops playback when it's up.</li>
+                        <li>On <b>Household</b>, set up shared accounts, and show announcements or planned maintenance in Arcfin.</li>
+                        <li>On <b>Downloads</b>, cap how many movies, episodes and songs each person can keep downloaded across their devices.</li>
+                        <li>Everything is off until you turn it on.</li>
                         <li>Changes reach each device the next time Arcfin syncs: when it opens, comes to the front, or a setting changes.</li>
                     </ul>
                 </div>
@@ -54,13 +65,318 @@
             </section>
 
             <section class="afPanel" data-panel="pick" role="tabpanel" hidden>
-                <p class="fieldDescription">Pick Together lets people on this server swipe through titles on iPhone and iPad until they agree on one. Each person only sees titles they're allowed to see. Turn it off for everyone, or for some users.</p>
                 <div class="afCard">
+                    <h3 class="afCardTitle">Pick Together</h3>
+                    <p class="fieldDescription">People on this server swipe through titles on iPhone and iPad until they agree on one. Each person only sees titles they're allowed to see.</p>
                     <label class="afInline"><input type="checkbox" id="afPickEnabled" /> <span>Pick Together is on</span></label>
                     <h3 class="afCardTitle" style="margin-top:1em">Turn it off for</h3>
                     <div id="afPickUsers"></div>
                     <div class="afButtons" style="margin-top:1em">
                         <button is="emby-button" type="button" class="raised button-submit emby-button" id="afPickSave"><span>Save</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Watch Parties</h3>
+                    <p class="fieldDescription">Someone picks a title and shares a code; others join with it, and everyone watches together with SyncPlay. A party can start now or be scheduled up to 30 days ahead: people join early with the code, Arcfin reminds them when the lobby opens 15 minutes before, and a party nobody starts ends an hour after its time. Only people who can see the title can join. There are no links.</p>
+                    <label class="afInline"><input type="checkbox" id="afPartyEnabled" /> <span>Watch parties are on</span></label>
+                    <h3 class="afCardTitle" style="margin-top:1em">Turn them off for</h3>
+                    <div id="afPartyUsers"></div>
+                    <div class="afButtons" style="margin-top:1em">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afPartySave"><span>Save</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Happening Now</h3>
+                    <p class="fieldDescription">Every watch party and Pick Together session on now or scheduled. You have the host's controls over any of them.</p>
+                    <div id="afLive"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised emby-button" id="afLiveRefresh"><span>Refresh</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">History</h3>
+                    <p class="fieldDescription">Past watch parties and Pick Together sessions: when, who hosted, who took part, and how they ended. Only kept while this is on.</p>
+                    <label class="afInline"><input type="checkbox" id="afHistoryEnabled" /> <span>Keep history</span></label>
+                    <div class="afToolbar" style="margin-top:0.75em">
+                        <label class="afInline">Keep for
+                            <select is="emby-select" class="afControl" id="afHistoryKeep" style="width:auto">
+                                <option value="7">7 days</option>
+                                <option value="30">30 days</option>
+                                <option value="90">90 days</option>
+                                <option value="180">180 days</option>
+                                <option value="365">1 year</option>
+                                <option value="custom">Custom…</option>
+                                <option value="never">For ever</option>
+                            </select>
+                        </label>
+                        <label class="afInline" id="afHistoryCustomWrap" hidden><input type="number" class="afControl" id="afHistoryCustom" min="1" max="3650" style="width:6em;height:2.4em" /> days</label>
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afHistorySave"><span>Save</span></button>
+                    </div>
+                    <div class="afToolbar">
+                        <select is="emby-select" class="afControl" id="afHistoryKind" style="width:auto" aria-label="Show">
+                            <option value="">Everything</option>
+                            <option value="watchParty">Watch parties</option>
+                            <option value="pickTogether">Pick Together</option>
+                        </select>
+                        <button is="emby-button" type="button" class="raised emby-button afDanger" id="afHistoryClear"><span>Clear History</span></button>
+                    </div>
+                    <div id="afHistory"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Recommendations</h3>
+                    <p class="fieldDescription">Rows on each person's Home picked from what they've watched, liked and favourited: Top Picks, Because You Watched, and Popular on This Server. Popular only shows titles at least two other people played in the last 30 days, so no one's viewing is shown on its own.</p>
+                    <label class="afInline"><input type="checkbox" id="afRecsEnabled" /> <span>Recommendations are on</span></label>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Hide from Continue Watching and Next Up</h3>
+                    <p class="fieldDescription">People can hide titles from Continue Watching and Next Up in Arcfin. What they hide is kept on this server, so it's the same on all their devices.</p>
+                    <label class="afInline"><input type="checkbox" id="afHiddenEnabled" /> <span>Hiding titles is on</span></label>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="integrations" role="tabpanel" hidden>
+                <p class="fieldDescription">With these set, Arcfin uses Seerr and TMDB through this server: the keys stay here, encrypted, and never reach anyone's device. Every Seerr call is made as the person using it, with their own Seerr permissions and request limits. Without them, the apps keep signing in to Seerr themselves.</p>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Seerr</h3>
+                    <label class="inputLabel" for="afSeerrUrl">Local address, as this server reaches it</label>
+                    <input type="url" class="afControl" id="afSeerrUrl" placeholder="http://seerr:5055" style="width:100%;max-width:32em" />
+                    <label class="inputLabel" for="afSeerrPublicUrl" style="margin-top:0.8em;display:block">Public address, as people reach it</label>
+                    <input type="url" class="afControl" id="afSeerrPublicUrl" placeholder="https://requests.example.com" style="width:100%;max-width:32em" />
+                    <div class="fieldDescription">Becomes everyone's Seerr address in Arcfin, unless the Settings tab sets one. It's what links to Seerr open.</div>
+                    <label class="inputLabel" for="afSeerrKey" style="margin-top:0.8em;display:block">API key <span class="afBadge" id="afSeerrKeyState"></span></label>
+                    <input type="password" class="afControl" id="afSeerrKey" autocomplete="off" placeholder="Leave empty to keep the saved key" style="width:100%;max-width:32em" />
+                    <div class="fieldDescription">Seerr › Settings › General › API Key. It can't be shown again once saved.</div>
+                    <label class="afInline" style="margin-top:0.8em"><input type="checkbox" id="afSeerrAddUsers" /> <span>Add people to Seerr the first time they use it</span></label>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afIntegrationsSave"><span>Save</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button" id="afSeerrTest"><span>Test Seerr</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button afDanger" id="afSeerrRemove"><span>Remove Key</span></button>
+                    </div>
+                    <div id="afSeerrHealth" class="fieldDescription" style="margin-top:0.8em"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">TMDB</h3>
+                    <label class="inputLabel" for="afTmdbKey">API key or read access token <span class="afBadge" id="afTmdbKeyState"></span></label>
+                    <input type="password" class="afControl" id="afTmdbKey" autocomplete="off" placeholder="Leave empty to keep the saved key" style="width:100%;max-width:32em" />
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afTmdbSave"><span>Save</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button afDanger" id="afTmdbRemove"><span>Remove Key</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Waiting to Send</h3>
+                    <p class="fieldDescription">Requests made while Seerr couldn't be reached. The server tries again every few minutes for three days.</p>
+                    <div id="afQueue"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised emby-button" id="afQueueSend"><span>Send Now</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Encryption</h3>
+                    <div id="afVaultInfo" class="fieldDescription"></div>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="security" role="tabpanel" hidden>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Signed Commands</h3>
+                    <p class="fieldDescription">Turns on the signing key, PIN clearing, locks, wiping devices and the rules below. Until it's on, no key is made and devices don't check in.</p>
+                    <label class="afInline"><input type="checkbox" id="afSecurityEnabled" /> <span>Signed commands are on</span></label>
+                </div>
+                <p class="fieldDescription">PINs never leave people's devices. Instead, this server can send signed commands that Arcfin carries out: clear a profile's PIN, lock a profile on all its devices, or unlock it. Each device checks every command's signature against this server's key, so only this server can send them.</p>
+                <p class="fieldDescription">How a device learns the key: over HTTPS it trusts the key the first time, because the system has already checked the server's certificate. Over plain HTTP it can't be sure who answered, so Arcfin shows the key's fingerprint in Settings › Server and waits until someone confirms it matches the one below. A new key you make later is signed by the old one, so devices move to it on their own; any other change of key needs the fingerprint checked again.</p>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Signing Key</h3>
+                    <div id="afKeyInfo" class="fieldDescription"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afKeyGenerate"><span>Make a Key</span></button>
+                    </div>
+                    <details class="afJson" style="margin-top:1em">
+                        <summary class="afDanger">Replace the key completely</summary>
+                        <p class="fieldDescription">For a key you think has leaked. Makes an entirely new key that the old one doesn't vouch for, and deletes the record of past keys, so the old key can't move any device anywhere. Locks and other commands stay in force. Every device has to trust the new key again: over HTTPS that happens by itself, and over plain HTTP someone has to check the new fingerprint in Settings › Server on that device. Until then, those devices ignore your commands.</p>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button afDanger" id="afKeyReset"><span>Replace the Key</span></button>
+                        </div>
+                    </details>
+                    <details class="afJson" style="margin-top:1em">
+                        <summary>Use your own key</summary>
+                        <p class="fieldDescription">An EC P-256 private key in PEM, e.g. from <span class="afMono">openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt</span>. It's stored encrypted and can't be read back. A key of your own can't be rotated automatically, so using one turns rotation off: for the strongest setup, let the plugin make and rotate its keys.</p>
+                        <textarea is="emby-textarea" class="afControl afMono" id="afKeyPem" rows="6" autocomplete="off"></textarea>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button" id="afKeyImport"><span>Use This Key</span></button>
+                        </div>
+                    </details>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Trusted Devices</h3>
+                    <label class="afInline"><input type="checkbox" id="afTrustRequired" /> <span>New Arcfin devices need approving</span></label>
+                    <p class="fieldDescription">A new device shows a code and waits; the person approves it on one of their trusted iPhones or iPads, or you approve it under Users &amp; Devices. Devices already signed in when you turn this on are trusted, and so is someone's first device.</p>
+                    <h3 class="afSubTitle">For one person</h3>
+                    <div id="afTrustUsers"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afTrustSave"><span>Save</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">PIN Rules</h3>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Require a PIN for</span>
+                            <select is="emby-select" class="afControl" id="afPinRequired">
+                                <option value="none">None</option>
+                                <option value="everyone">Everyone</option>
+                                <option value="chosen">Chosen people</option>
+                            </select>
+                        </label>
+                        <label class="afLimitField"><span class="afRowMeta">Minimum length</span>
+                            <select is="emby-select" class="afControl" id="afPinMin">
+                                <option value="4">4 digits</option>
+                                <option value="5">5 digits</option>
+                                <option value="6">6 digits</option>
+                                <option value="7">7 digits</option>
+                                <option value="8">8 digits</option>
+                            </select>
+                        </label>
+                        <label class="afLimitField"><span class="afRowMeta">Lock after wrong tries</span>
+                            <select is="emby-select" class="afControl" id="afPinTries">
+                                <option value="">Off</option>
+                                <option value="3">3 tries</option>
+                                <option value="4">4 tries</option>
+                                <option value="5">5 tries</option>
+                                <option value="6">6 tries</option>
+                                <option value="7">7 tries</option>
+                                <option value="8">8 tries</option>
+                                <option value="9">9 tries</option>
+                                <option value="10">10 tries</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="afPinUsers"></div>
+                    <p class="fieldDescription">The longest a PIN can be is 8 digits. With a number of tries set, a profile locks on that device after that many wrong PINs, until you unlock it under Users &amp; Devices.</p>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afPinSave"><span>Save</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Require HTTPS Away from Home</h3>
+                    <p class="fieldDescription">Arcfin won't use plain HTTP unless the address is on the local network (like 192.168.x.x or a .local name). This rule is signed, so nothing on the network can turn it off.</p>
+                    <label class="afInline"><input type="checkbox" id="afHttpsAway" /> <span>Require HTTPS away from home</span></label>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Devices on Plain HTTP</h3>
+                    <p class="fieldDescription">A device that reaches this server over plain HTTP can't be sure who answered, so it asks someone to check the key's fingerprint before it carries out your commands. It checks by itself where it can: if the app also has this server's HTTPS address saved, it fetches the key from there and trusts it when they match. Anyone can compare with the fingerprint shown in Settings › Server on a device that already trusts the key.</p>
+                    <label class="afInline"><input type="checkbox" id="afTrustOverHttp" /> <span>Trust the key over plain HTTP without checking</span></label>
+                    <div class="fieldDescription">For households where no one will check. This setting reaches devices over plain HTTP too, so on a network you don't trust it could be faked: keep it for your home network.</div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Automatic Rotation</h3>
+                    <p class="fieldDescription">Makes a new key on a schedule, each signed by the last, so devices move over by themselves. A device that falls behind can't use an old key for long (see the next card). The key is kept on this server, so rotation doesn't protect against someone who already has the server; what it does is put a limit on how long any one key is trusted. It only works with a key the plugin made: using your own key turns it off.</p>
+                    <label class="afInline"><input type="checkbox" id="afRotate" /> <span>Rotate the key every</span></label>
+                    <input type="number" class="afControl" id="afRotateDays" min="1" max="365" style="width:5em;height:2.4em" /> <span>days</span>
+                    <div class="fieldDescription" id="afRotateNext"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Devices That Fall Behind</h3>
+                    <p class="fieldDescription">Every Arcfin device tells the server which key it holds when it syncs. One that hasn't picked up the current key for this long is signed out, so it has to sign in again; or signed out and locked, so Arcfin won't open on it until you unlock it below. Only Arcfin devices that have checked in are counted, and the count starts from when you turn this on.</p>
+                    <div class="afToolbar">
+                        <select is="emby-select" class="afControl" id="afStaleAction" style="width:auto">
+                            <option value="off">Off</option>
+                            <option value="signOut">Sign them out</option>
+                            <option value="lock">Sign them out and lock Arcfin</option>
+                        </select>
+                        <label class="afInline">after <input type="number" class="afControl" id="afStaleDays" min="1" max="3650" style="width:5em;height:2.4em" /> days</label>
+                    </div>
+                    <h3 class="afSubTitle">For one person</h3>
+                    <div id="afStaleUsers"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afSecuritySave"><span>Save</span></button>
+                    </div>
+                    <h3 class="afSubTitle">Older Arcfin versions</h3>
+                    <p class="fieldDescription">Arcfin from before 0.5.0 build 3's security features can't check in, follow key changes or show a lock. Arcfin Sync tells them apart by whether they check in, not by version number, since every build of 0.5.0 reports the same version. Someone you lock is signed out of an older Arcfin straight away either way; to keep them off the server in every app, disable their account when you lock them.</p>
+                    <select is="emby-select" class="afControl" id="afOlderApps" style="width:auto">
+                        <option value="allow">Allow them</option>
+                        <option value="signOut">Sign them out a day after they're first seen</option>
+                    </select>
+                    <p class="fieldDescription">Each device's key status, and older Arcfin versions, are under <b>Users &amp; Devices</b>, with the person they belong to.</p>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Profiles</h3>
+                    <div id="afSecurityUsers"></div>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="limits" role="tabpanel" hidden>
+                <p class="fieldDescription">Daily watch time and a bedtime for anyone who needs them. The server counts time from every app and stops playback once time's up or bedtime starts, with a message.</p>
+                <div class="afCard">
+                    <label class="inputLabel" for="afLimitsZone">Time zone for everyone</label>
+                    <input type="text" class="afControl" id="afLimitsZone" placeholder="Europe/Dublin" style="width:100%;max-width:20em;height:2.4em" />
+                    <div class="fieldDescription" id="afLimitsClock"></div>
+                    <label class="afInline" style="margin-top:0.8em"><input type="checkbox" id="afLimitsWarn" /> <span>Warn 10 and 5 minutes before time's up or bedtime</span></label>
+                </div>
+                <div id="afLimitsUsers"></div>
+                <div class="afButtons">
+                    <button is="emby-button" type="button" class="raised button-submit emby-button" id="afLimitsSave"><span>Save</span></button>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="downloads" role="tabpanel" hidden>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Movies and Episodes</h3>
+                    <p class="fieldDescription">Caps how much each person can keep downloaded in Arcfin. Whichever cap is reached first stops a download. Counted across all of a person's Arcfin devices.</p>
+                    <label class="afInline"><input type="checkbox" id="afDlEnabled" /> <span>Download limits are on</span></label>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Most titles (empty = no cap)</span><input type="number" class="afControl" id="afDlTitles" min="1" max="100000" step="1" inputmode="numeric" placeholder="No cap" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Most GB (empty = no cap)</span><input type="number" class="afControl" id="afDlGb" min="0.1" max="100000" step="0.1" inputmode="decimal" placeholder="No cap" /></label>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Music</h3>
+                    <p class="fieldDescription">Caps how much music each person can keep downloaded in Arcfin. Whichever is reached first stops a download. A song or album on several of a person's devices counts once.</p>
+                    <label class="afInline"><input type="checkbox" id="afDlMusicEnabled" /> <span>Music limits are on</span></label>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Most albums (empty = no cap)</span><input type="number" class="afControl" id="afDlAlbums" min="1" max="100000" step="1" inputmode="numeric" placeholder="No cap" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Most songs (empty = no cap)</span><input type="number" class="afControl" id="afDlSongs" min="1" max="1000000" step="1" inputmode="numeric" placeholder="No cap" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Most GB (empty = no cap)</span><input type="number" class="afControl" id="afDlMusicGb" min="0.1" max="100000" step="0.1" inputmode="decimal" placeholder="No cap" /></label>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">For One Person</h3>
+                    <p class="fieldDescription">Give someone no limits or their own caps, for movies and episodes, music, or both.</p>
+                    <div id="afDlUsers"></div>
+                </div>
+                <div class="afButtons">
+                    <button is="emby-button" type="button" class="raised button-submit emby-button" id="afDlSave"><span>Save</span></button>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="household" role="tabpanel" hidden>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Shared Accounts</h3>
+                    <p class="fieldDescription">Pick an account used by several people, for example the one on the living-room TV, and tick who watches on it. When something plays on a shared account, Arcfin there asks who's watching, and their own progress and watched status follow along.</p>
+                    <div id="afSharedList"></div>
+                    <div class="afOverrideAdd">
+                        <select is="emby-select" class="afControl" id="afSharedPick" aria-label="Account to share"></select>
+                        <button type="button" class="afSmallButton" id="afSharedAdd">Add Shared Account</button>
+                    </div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afSharedSave"><span>Save</span></button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Announcements</h3>
+                    <p class="fieldDescription">A banner in Arcfin, for everyone or chosen people, from and until the times you set. Nothing shows until you add one.</p>
+                    <div id="afAnnList"></div>
+                    <div class="afEditor" id="afAnnEditor" hidden></div>
+                    <div class="afButtons">
+                        <button type="button" class="afSmallButton" id="afAnnAdd">Add Announcement</button>
+                    </div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Planned Maintenance</h3>
+                    <p class="fieldDescription">When the server will be down. Arcfin warns people ahead of time, then shows when the server will be back instead of a connection error. Windows that have ended are removed.</p>
+                    <div id="afMaintList"></div>
+                    <div class="afEditor" id="afMaintEditor" hidden></div>
+                    <div class="afButtons">
+                        <button type="button" class="afSmallButton" id="afMaintAdd">Add Maintenance</button>
                     </div>
                 </div>
             </section>
@@ -154,6 +470,11 @@
         .afRename .afControl { flex: 1 1 14em; max-width: 22em; }
         .afOverrideAdd { display: flex; gap: 0.5em; margin-top: 0.6em; flex-wrap: wrap; }
         .afOverrideAdd .afControl { flex: 1 1 16em; max-width: 26em; }
+        .afLimitGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11em, 14em)); gap: 0.6em 1em; margin-top: 0.75em; }
+        .afLimitField { display: flex; flex-direction: column; gap: 0.25em; }
+        .afLimitField .afControl { width: 100%; height: 2.4em; line-height: normal; padding: 0.35em 0.6em; }
+        .afChecks { display: flex; flex-wrap: wrap; gap: 0.35em 1.25em; margin-top: 0.6em; }
+        .afEditor { border-top: 1px solid var(--af-divider); margin-top: 0.75em; padding-top: 0.25em; }
         .afButtons { display: flex; gap: 0.6em; flex-wrap: wrap; margin-top: 1em; }
         .afButtons .emby-button { margin: 0; }
         .afJson summary { cursor: pointer; overflow-wrap: anywhere; }

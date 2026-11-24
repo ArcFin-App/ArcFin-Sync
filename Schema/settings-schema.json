@@ -2112,6 +2112,10 @@
         {
           "value": "local",
           "title": "Local Account"
+        },
+        {
+          "value": "quickConnect",
+          "title": "Quick Connect"
         }
       ],
       "platforms": [

@@ -332,7 +332,7 @@ public class PickTogetherController : ControllerBase
                 session.Leave(key!, DateTime.UtcNow);
                 if (session.People.Count == 0)
                 {
-                    Sessions.TryRemove(session.Code, out _);
+                    Forget(session, "left");
                 }
             }
         }
@@ -379,7 +379,7 @@ public class PickTogetherController : ControllerBase
                     other.Leave(key, now);
                     if (other.People.Count == 0)
                     {
-                        Sessions.TryRemove(other.Code, out _);
+                        Forget(other, "left");
                     }
                 }
             }
@@ -524,6 +524,42 @@ public class PickTogetherController : ControllerBase
         };
     }
 
+    /// <summary>The sessions running now, for administrators.</summary>
+    internal static IReadOnlyCollection<PickSession> All
+    {
+        get
+        {
+            Sweep();
+            return Sessions.Values.ToList();
+        }
+    }
+
+    internal static PickSession? Find(string code) => Sessions.TryGetValue(Normalize(code), out var session) ? session : null;
+
+    /// <summary>Ends a session for everyone, keeping it in the history when that's on. Call with the session locked.</summary>
+    internal static bool Forget(PickSession session, string outcome)
+    {
+        if (!Sessions.TryRemove(session.Code, out _))
+        {
+            return false;
+        }
+
+        History.HistoryStore.Record(new History.HistoryEntry
+        {
+            Kind = History.HistoryStore.PickTogether,
+            Code = session.Code,
+            Created = session.Created,
+            StartedWatching = session.WatchedTogetherAt,
+            Ended = DateTime.UtcNow,
+            HostName = session.Participants.TryGetValue(session.HostKey, out var host) ? host : string.Empty,
+            People = session.Participants.Values.Distinct().ToList(),
+            ItemId = session.WatchedTogetherAt is not null ? session.Together?.PlayItemId ?? session.Together?.ItemId : null,
+            Matches = session.Matches.Select(m => m.Id).Distinct().ToList(),
+            Outcome = session.WatchedTogetherAt is not null ? "watched" : outcome
+        });
+        return true;
+    }
+
     private static void Sweep()
     {
         var cutoff = DateTime.UtcNow - Expiry;
@@ -531,7 +567,10 @@ public class PickTogetherController : ControllerBase
         {
             if (pair.Value.LastActivity < cutoff)
             {
-                Sessions.TryRemove(pair.Key, out _);
+                lock (pair.Value)
+                {
+                    Forget(pair.Value, "left");
+                }
             }
         }
     }
