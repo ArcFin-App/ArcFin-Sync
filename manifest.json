@@ -9,6 +9,14 @@
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/icon.png",
     "versions": [
       {
+        "version": "0.5.0.0",
+        "changelog": "Pick Together: people on the server swipe through titles on iPhone and iPad until they agree on one, then watch it on one device, on another, or together over SyncPlay. They join with a code or a QR code in Arcfin; every call needs a sign-in. Each person only gets titles everyone in the session can see and, unless watched titles are included, that nobody has watched; a title is never dealt twice in a session. The device that starts a session hosts it: it deals new titles, removes people and locks the session, and several devices on one shared profile each take part. Administrators turn it on or off for everyone or for chosen users on a new Pick Together tab and from Arcfin.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.5.0/arcfin-sync-0.5.0.0.zip",
+        "checksum": "54f8bc9a4d6cc03c655fd3a71081b8be",
+        "timestamp": "2026-11-24T05:25:50Z"
+      },
+      {
         "version": "0.4.0.0",
         "changelog": "Settings catalogue: the plugin carries Arcfin's list of settings and serves it at GET /ArcfinSync/Schema, and only settings in it are stored. GET/PUT /ArcfinSync/Sync: each value with where it comes from, which device changed the settings last, and Replace to send one device's settings to the user's others. A record of each user's Arcfin devices, which users and administrators can rename and forget. Server-wide and per-user defaults and locks for administrators. One configuration page with Overview, Settings and Users & Devices tabs. Removed the notification, Seerr webhook and advanced YAML options, which nothing used. GET/PUT Settings keep their shapes, and 0.3 locks and defaults stay written so going back to 0.3.1 keeps them.",
         "targetAbi": "12.1.0.0",
