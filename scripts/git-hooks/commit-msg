@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Rejects a commit whose subject isn't <type>(scope): message, before it's made.
+# Turn it on once per clone: git config core.hooksPath scripts/git-hooks
+check="$(git rev-parse --show-toplevel)/.gitea/scripts/check-commits.py"
+[ -f "$check" ] || exit 0
+exec python3 -I "$check" --file "$1"
