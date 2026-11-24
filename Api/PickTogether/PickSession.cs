@@ -79,10 +79,19 @@ public sealed class PickSession
         _random = random ?? new Random();
         _sharedSeed = _random.Next();
         LastActivity = now;
+        Created = now;
         Deck = DealDeck(new HashSet<Guid>());
     }
 
     public string Code { get; }
+
+    public DateTime Created { get; }
+
+    /// <summary>Everyone who was ever in it, by key, for its history.</summary>
+    public Dictionary<string, string> Participants { get; } = new();
+
+    /// <summary>When the leader made the Watch Together group.</summary>
+    public DateTime? WatchedTogetherAt { get; private set; }
 
     /// <summary>
     /// The device that started the session (user and device, so on a shared profile only that
@@ -141,6 +150,7 @@ public sealed class PickSession
             person = new PickPerson(key, userId, name) { Eligible = eligible };
             person.Order = OrderFor(person);
             People[key] = person;
+            Participants[key] = name;
         }
 
         person.LastSeen = now;
@@ -287,6 +297,7 @@ public sealed class PickSession
         }
 
         Together.GroupId = groupId;
+        WatchedTogetherAt ??= now;
         Together.PlayItemId = playItemId;
         Together.StartTicks = Math.Max(0, startTicks);
         Touch(key, now);
