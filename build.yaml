@@ -1,26 +1,24 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.4.0.0"
+version: "0.5.0.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
 overview: "Syncs Arcfin app settings across a user's devices, with admin defaults and locks."
-description: "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use."
+description: "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions, where people swipe through titles until they agree on one, extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use."
 category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Settings catalogue: the plugin carries Arcfin's list of settings and serves it at
-    GET /ArcfinSync/Schema; only settings in it are stored (other keys are removed from
-    users' stored values and from the policy), including decimal settings and settings
-    that hold a JSON array or object.
-  - GET/PUT /ArcfinSync/Sync: each value with where it comes from, which device changed
-    the settings last, and Replace to send one device's settings to the user's others
-    (only settings that device's platform shows).
-  - A record of each user's Arcfin devices, which users and administrators can rename
-    and forget.
-  - Server-wide and per-user defaults and locks for administrators.
-  - One configuration page with Overview, Settings and Users & Devices tabs.
-  - Removed the notification, Seerr webhook and advanced YAML options, which nothing used.
-  - GET/PUT Settings keep their shapes, and 0.3 locks and defaults stay written so going
-    back to 0.3.1 keeps them.
+  - Pick Together: people on the server swipe through titles on iPhone and iPad until they
+    agree on one, then watch it on one device, on another, or together over SyncPlay.
+    Sessions live in memory under /ArcfinSync/PickTogether and end after six hours idle.
+    People join with a code (typed, or from a QR code in Arcfin); every call needs a sign-in.
+  - Each person only gets titles everyone in the session can see, and, unless the session
+    includes watched titles, that nobody in it has watched. A title is never dealt twice in
+    a session. Matches need everyone (or, if chosen, most people) present to like a title.
+  - The device that starts a session hosts it: only it deals new titles, removes people
+    (who can't rejoin) and locks it against new people. Several devices on one shared
+    profile each take part. Ten wrong codes in ten minutes per account, then a wait.
+  - Administrators turn Pick Together on or off for everyone or for chosen users, on a new
+    Pick Together tab of the dashboard page and from Arcfin; it's on by default.
