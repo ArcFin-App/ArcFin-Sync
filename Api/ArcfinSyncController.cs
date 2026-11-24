@@ -107,8 +107,39 @@ public class ArcfinSyncController : ControllerBase
             Installed = true,
             Version = Plugin.Instance!.Version.ToString(),
             ApiVersion = 2,
-            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether" }
+            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether", "hidden", "integrations", "signedCommands", "limits", "watchParty", "recommendations", "downloadLimits", "sharedAccounts", "announcements", "maintenance", "trustedDevices", "wipe", "pinRules", "requireHttps" },
+            Enabled = EnabledFeatures(Plugin.Instance.Configuration)
         };
+    }
+
+    /// <summary>The optional features turned on, for everyone's Arcfin to show.</summary>
+    public static List<string> EnabledFeatures(Configuration.PluginConfiguration config)
+    {
+        var on = new List<string>();
+        void Add(bool enabled, string name)
+        {
+            if (enabled)
+            {
+                on.Add(name);
+            }
+        }
+
+        Add(config.PickTogether.Enabled, "pickTogether");
+        Add(config.WatchParty.Enabled, "watchParty");
+        Add(config.RecommendationsEnabled, "recommendations");
+        Add(config.HiddenEnabled, "hidden");
+        Add(config.Security.Enabled, "signedCommands");
+        Add(config.Limits.Rules.Count > 0, "limits");
+        Add(config.Downloads.Enabled || config.Downloads.MusicEnabled, "downloadLimits");
+        Add(config.SharedAccounts.Count > 0, "sharedAccounts");
+        Add(true, "announcements");
+        Add(true, "maintenance");
+        Add(config.Security.Enabled && config.Security.RequireTrustedDevices, "trustedDevices");
+        Add(config.Security.Enabled, "wipe");
+        Add(config.Security.Enabled && (config.Security.Pins.RequiredFor != "none" || config.Security.Pins.MaxTries is not null), "pinRules");
+        Add(config.Security.Enabled && config.Security.RequireHttpsAway, "requireHttps");
+        Add(Integrations.SeerrClient.IsConfigured || Security.SecretVault.Current.Has(Integrations.SeerrClient.TmdbKeyName), "integrations");
+        return on;
     }
 
     [HttpGet("Settings")]
@@ -121,7 +152,7 @@ public class ArcfinSyncController : ControllerBase
             return error;
         }
 
-        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id, Plugin.Instance!.Configuration.Integrations.SeerrPublicUrl);
         return Ok(SettingsRules.LegacyMerge(rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded), user.Username));
     }
 
@@ -146,7 +177,7 @@ public class ArcfinSyncController : ControllerBase
             return BadRequest(tooBig);
         }
 
-        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id, Plugin.Instance!.Configuration.Integrations.SeerrPublicUrl);
         var values2 = SaveSynced(auth!, user, rules, values, replace: false);
 
         // 0.3.x answered a save without the Jellyfin username, so a forced seerrUsername comes
@@ -171,7 +202,7 @@ public class ArcfinSyncController : ControllerBase
             return error;
         }
 
-        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id, Plugin.Instance!.Configuration.Integrations.SeerrPublicUrl);
         return SyncState(user, rules, SettingsStore.Current.LoadSyncedValues(user.Id, SettingsSchema.Embedded));
     }
 
@@ -198,7 +229,7 @@ public class ArcfinSyncController : ControllerBase
             return BadRequest(tooBig);
         }
 
-        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id);
+        var rules = SettingsRules.RulesForUser(PolicyService.Get(), user!.Id, Plugin.Instance!.Configuration.Integrations.SeerrPublicUrl);
         var values = SaveSynced(auth!, user, rules, body?.Values ?? new Dictionary<string, string?>(), body?.Replace ?? false);
         return SyncState(user, rules, values);
     }
