@@ -22,6 +22,17 @@ public class PluginConfiguration : BasePluginConfiguration
     /// from 0.3.x, which builds it from <see cref="LockedSettings"/>.
     /// </summary>
     public SettingsPolicy? Policy { get; set; }
+
+    /// <summary>Who may use Pick Together. On for everyone until an admin changes it.</summary>
+    public PickTogetherSettings PickTogether { get; set; } = new();
+}
+
+public class PickTogetherSettings
+{
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Users it's off for while it's on for everyone else.</summary>
+    public List<Guid> DisabledUsers { get; set; } = new();
 }
 
 public class LockedSetting

@@ -553,12 +553,46 @@ function renderUsers(view) {
 }
 
 
+// ----- Pick Together -----
+
+function renderPick(view) {
+    var settings = STATE.pick || { Enabled: true, DisabledUsers: [] };
+    var enabled = view.querySelector("#afPickEnabled");
+    enabled.checked = !!settings.Enabled;
+    var list = view.querySelector("#afPickUsers");
+    list.textContent = "";
+    STATE.users.forEach(function (user) {
+        var box = el("input", { type: "checkbox" });
+        box.checked = settings.DisabledUsers.indexOf(user.UserId) >= 0;
+        box.dataset.userId = user.UserId;
+        box.disabled = !enabled.checked;
+        list.appendChild(el("label", { className: "afInline", style: "display:flex;margin:0.35em 0" }, [box, el("span", { text: user.Name })]));
+    });
+    enabled.onchange = function () {
+        list.querySelectorAll("input").forEach(function (b) { b.disabled = !enabled.checked; });
+    };
+}
+
+function savePick(view) {
+    var disabled = [];
+    view.querySelectorAll("#afPickUsers input").forEach(function (b) { if (b.checked) { disabled.push(b.dataset.userId); } });
+    Dashboard.showLoadingMsg();
+    send("PUT", "Admin/PickTogether", { Enabled: view.querySelector("#afPickEnabled").checked, DisabledUsers: disabled })
+        .then(function (saved) {
+            STATE.pick = saved;
+            renderPick(view);
+            Dashboard.hideLoadingMsg();
+            Dashboard.processPluginConfigurationUpdateResult();
+        }, function (err) { Dashboard.hideLoadingMsg(); showError(err); });
+}
+
 // ----- Page -----
 
 function renderAll(view) {
     renderOverview(view);
     renderSettings(view);
     renderUsers(view);
+    renderPick(view);
 }
 
 function selectTab(view, name) {
@@ -574,8 +608,9 @@ function selectTab(view, name) {
 function reload(view, keepTab) {
     Dashboard.showLoadingMsg();
     return Promise.all([
-        getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status")
+        getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status"), getJson("Admin/PickTogether")
     ]).then(function (results) {
+        STATE.pick = results[4];
         STATE.schema = results[0];
         // Unsaved policy edits survive a refresh of the user list.
         if (!STATE.dirty || !STATE.policy) {
@@ -605,6 +640,7 @@ function wire(view) {
     view.querySelector("#afSettingsSearch").addEventListener("input", function () { filterSettings(view); });
     view.querySelector("#afOnlyChanged").addEventListener("change", function () { filterSettings(view); });
     view.querySelector("#afSavePolicy").addEventListener("click", function () { savePolicy(view); });
+    view.querySelector("#afPickSave").addEventListener("click", function () { savePick(view); });
     view.querySelector("#afRevert").addEventListener("click", function () {
         STATE.policy = clone(STATE.saved);
         markDirty();

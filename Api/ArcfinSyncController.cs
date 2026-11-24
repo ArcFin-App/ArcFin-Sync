@@ -107,7 +107,7 @@ public class ArcfinSyncController : ControllerBase
             Installed = true,
             Version = Plugin.Instance!.Version.ToString(),
             ApiVersion = 2,
-            Features = new List<string> { "schema", "devices", "policy", "syncMeta" }
+            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether" }
         };
     }
 

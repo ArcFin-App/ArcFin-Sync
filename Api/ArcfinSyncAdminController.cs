@@ -24,6 +24,31 @@ public class ArcfinSyncAdminController : ControllerBase
         _userManager = userManager;
     }
 
+    /// <summary>Who may use Pick Together: on or off for everyone, and the users it's off for.</summary>
+    [HttpGet("PickTogether")]
+    public ActionResult<PickTogetherSettings> GetPickTogether()
+    {
+        return Plugin.Instance!.Configuration.PickTogether;
+    }
+
+    [HttpPut("PickTogether")]
+    public ActionResult<PickTogetherSettings> PutPickTogether([FromBody] PickTogetherSettings settings)
+    {
+        if (settings is null)
+        {
+            return BadRequest("No settings.");
+        }
+
+        var plugin = Plugin.Instance!;
+        plugin.Configuration.PickTogether = new PickTogetherSettings
+        {
+            Enabled = settings.Enabled,
+            DisabledUsers = (settings.DisabledUsers ?? new List<Guid>()).Distinct().Where(id => _userManager.GetUserById(id) is not null).ToList()
+        };
+        plugin.SaveConfiguration();
+        return plugin.Configuration.PickTogether;
+    }
+
     [HttpGet("Policy")]
     public ActionResult<SettingsPolicy> GetPolicy()
     {

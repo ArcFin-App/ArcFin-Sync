@@ -13,6 +13,7 @@
                 <button type="button" class="afTab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
                 <button type="button" class="afTab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
                 <button type="button" class="afTab" role="tab" data-tab="users" aria-selected="false">Users &amp; Devices</button>
+                <button type="button" class="afTab" role="tab" data-tab="pick" aria-selected="false">Pick Together</button>
             </div>
 
             <section class="afPanel" data-panel="overview" role="tabpanel">
@@ -23,6 +24,7 @@
                         <li>Arcfin keeps each user's settings in step across their iPhone, iPad, Mac and Apple TV.</li>
                         <li>On <b>Settings</b>, give any setting a default (used until someone picks their own) or lock it (everyone gets your value and can't change it).</li>
                         <li>On <b>Users &amp; Devices</b>, see every device signed in with Arcfin, rename or forget one, and give a single user their own defaults and locks.</li>
+                        <li>On <b>Pick Together</b>, choose who can use it: people swipe through titles on iPhone and iPad until they agree on one to watch.</li>
                         <li>Changes reach each device the next time Arcfin syncs: when it opens, comes to the front, or a setting changes.</li>
                     </ul>
                 </div>
@@ -49,6 +51,18 @@
             <section class="afPanel" data-panel="users" role="tabpanel" hidden>
                 <p class="fieldDescription">Every user and each device they've used with Arcfin. Forgetting a device only removes it from this list; it stays signed in and comes back the next time it syncs. Per-user overrides replace the server-wide default and lock for that one user, and can unlock a setting just for them.</p>
                 <div id="afUsers"></div>
+            </section>
+
+            <section class="afPanel" data-panel="pick" role="tabpanel" hidden>
+                <p class="fieldDescription">Pick Together lets people on this server swipe through titles on iPhone and iPad until they agree on one. Each person only sees titles they're allowed to see. Turn it off for everyone, or for some users.</p>
+                <div class="afCard">
+                    <label class="afInline"><input type="checkbox" id="afPickEnabled" /> <span>Pick Together is on</span></label>
+                    <h3 class="afCardTitle" style="margin-top:1em">Turn it off for</h3>
+                    <div id="afPickUsers"></div>
+                    <div class="afButtons" style="margin-top:1em">
+                        <button is="emby-button" type="button" class="raised button-submit emby-button" id="afPickSave"><span>Save</span></button>
+                    </div>
+                </div>
             </section>
 
             <div class="afSaveBar" id="afSaveBar" hidden>
