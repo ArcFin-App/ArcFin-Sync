@@ -1,6 +1,6 @@
 # Arcfin Sync
 
-![Version](https://img.shields.io/badge/version-0.5.0-blue)
+![Version](https://img.shields.io/badge/version-0.6.0-blue)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
 A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). Installs on your Jellyfin server, keeps each user's Arcfin settings in step across their devices, and lets the server's administrators set defaults and locks for those settings.
@@ -12,13 +12,21 @@ A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). I
 - **Devices.** Keeps a record of each device a user signs in to with Arcfin (name, platform, app version, sync mode, last seen, its settings). Users can rename or forget their devices; administrators can for anyone.
 - **Defaults and locks.** Administrators give any setting a default (used until someone picks their own) or lock it (everyone gets that value and can't change it), for everyone or for one user. A per-user override can also unlock a setting for that person.
 - **Pick Together.** People on the server swipe through titles on iPhone and iPad until they agree on one, then watch it on one device, on another, or together over SyncPlay. They join with a code or a QR code in Arcfin, and each person only gets titles everyone in the session is allowed to see. The device that starts a session hosts it: it deals new titles, removes people and locks the session. Administrators turn it on or off for everyone or for chosen users. Needs Arcfin 0.5.0 (build 3) or later.
-- **Configuration page.** One page in the Jellyfin dashboard with Overview, Settings, Users & Devices and Pick Together tabs.
+- **Watch parties.** Arcfin hosts a SyncPlay group and guests join with a six-character code or QR code. Parties can be planned up to 30 days ahead, and the host sees what time it'll be for each guest. People in other SyncPlay apps can join the group; the host needs Arcfin.
+- **Seerr and TMDB through the server.** The API keys are kept on the server, encrypted with AES-256-GCM, and never reach a device. Every Seerr call is made as the person using it, on an allowlist of routes. Requests made while Seerr is down wait in a queue and are sent once it's back. Seerr can have a local address for the server and a public one for the apps.
+- **Signed commands.** A P-256 key, rotated on a schedule if you like, signs commands Arcfin carries out: clear a PIN, lock or unlock a profile (and optionally disable the Jellyfin account), wipe a lost device, and PIN rules. Devices trust the key over HTTPS by themselves, and over HTTP once someone checks its fingerprint. Rules for devices that fall behind, older Arcfin versions, trusted devices (a new device waits until a trusted one approves it) and requiring HTTPS away from home.
+- **Watch time and bedtime.** Daily minutes and a bedtime per person, in their own time zone, counted across every app, with warnings 10 and 5 minutes before.
+- **Household.** Download limits (titles and GB for videos; albums, songs and GB for music, counted once across a person's devices), shared accounts that ask who's watching and copy progress to each person, announcements, and planned maintenance.
+- **Hidden titles and recommendations.** Titles hidden from Continue Watching and Next Up are kept per person on the server. Top Picks, Because You Watched and Popular on This Server rows for Home.
+- **Live sessions and history.** Administrators can end, lock, remove people from or reschedule any watch party or Pick Together session, and keep their history for a set number of days or for ever.
+- **Opt-in.** Every feature above is off until an administrator turns it on; anything that was already in use when the plugin updates stays on. Arcfin works the same with or without the plugin.
+- **Configuration page.** One page in the Jellyfin dashboard with Overview, Settings, Users & Devices, Features, Seerr & TMDB, Security, Watch Time, Household and Downloads tabs.
 - **Audio tracks for downloads.** Copies one audio track of an item out as AAC in an .m4a with the server's ffmpeg, so a converted download can keep more than one audio track.
 - **Encoder check.** Reports which video encoders (H.264, HEVC, AV1) really work with the server's hardware acceleration, from a one-frame test encode per codec.
 
 ## Status
 
-v0.5.0, for Arcfin 0.5.0. Install it from the repository manifest below.
+v0.6.0, for Arcfin 0.5.0 (build 3 or later for the 0.6 features). Install it from the repository manifest below.
 
 ## Requirements
 

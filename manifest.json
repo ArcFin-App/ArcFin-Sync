@@ -2,12 +2,20 @@
   {
     "guid": "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d",
     "name": "Arcfin Sync",
-    "description": "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use.",
+    "description": "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions and watch parties, Seerr and TMDB through the server, signed security commands, watch-time limits and household features (each off until an administrator turns it on), extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use.",
     "overview": "Syncs Arcfin app settings across a user's devices, with admin defaults and locks.",
     "owner": "psmattas",
     "category": "General",
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/icon.png",
     "versions": [
+      {
+        "version": "0.6.0.0",
+        "changelog": "Watch parties hosted from Arcfin over SyncPlay, joined by code or QR code and plannable up to 30 days ahead. Seerr and TMDB through the server: keys encrypted with AES-256-GCM and never sent to devices, Seerr calls made as the person using it, and a queue for requests made while Seerr is down. Signed commands with an automatically rotating P-256 key: clear a PIN, lock or unlock a profile, wipe a lost device, PIN rules, trusted devices, rules for devices that fall behind and for older Arcfin versions, and HTTPS away from home. Watch time and bedtime per person. Download limits for videos and music, shared accounts with Who's Watching, announcements and planned maintenance. Titles hidden from Continue Watching and Next Up, and recommendation rows for Home. Live control and history of watch parties and Pick Together sessions. Every feature is off until an administrator turns it on; Pick Together, hidden titles and signed commands stay on where they were already in use.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.6.0/arcfin-sync-0.6.0.0.zip",
+        "checksum": "a847846f92368b2761460189f6f906ff",
+        "timestamp": "2026-11-24T19:07:10Z"
+      },
       {
         "version": "0.5.0.0",
         "changelog": "Pick Together: people on the server swipe through titles on iPhone and iPad until they agree on one, then watch it on one device, on another, or together over SyncPlay. They join with a code or a QR code in Arcfin; every call needs a sign-in. Each person only gets titles everyone in the session can see and, unless watched titles are included, that nobody has watched; a title is never dealt twice in a session. The device that starts a session hosts it: it deals new titles, removes people and locks the session, and several devices on one shared profile each take part. Administrators turn it on or off for everyone or for chosen users on a new Pick Together tab and from Arcfin.",

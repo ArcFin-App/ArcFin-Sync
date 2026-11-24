@@ -1,24 +1,20 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.5.0.0"
+version: "0.6.0.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
 overview: "Syncs Arcfin app settings across a user's devices, with admin defaults and locks."
-description: "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions, where people swipe through titles until they agree on one, extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use."
+description: "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions and watch parties, Seerr and TMDB through the server, signed security commands, watch-time limits and household features (each off until an administrator turns it on), extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use."
 category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Pick Together: people on the server swipe through titles on iPhone and iPad until they
-    agree on one, then watch it on one device, on another, or together over SyncPlay.
-    Sessions live in memory under /ArcfinSync/PickTogether and end after six hours idle.
-    People join with a code (typed, or from a QR code in Arcfin); every call needs a sign-in.
-  - Each person only gets titles everyone in the session can see, and, unless the session
-    includes watched titles, that nobody in it has watched. A title is never dealt twice in
-    a session. Matches need everyone (or, if chosen, most people) present to like a title.
-  - The device that starts a session hosts it: only it deals new titles, removes people
-    (who can't rejoin) and locks it against new people. Several devices on one shared
-    profile each take part. Ten wrong codes in ten minutes per account, then a wait.
-  - Administrators turn Pick Together on or off for everyone or for chosen users, on a new
-    Pick Together tab of the dashboard page and from Arcfin; it's on by default.
+  - Watch parties hosted from Arcfin over SyncPlay, joined by code or QR code and plannable up to 30 days ahead.
+  - Seerr and TMDB through the server: keys encrypted with AES-256-GCM and never sent to devices, Seerr calls made as the person using it, and a queue for requests made while Seerr is down.
+  - Signed commands with an automatically rotating P-256 key: clear a PIN, lock or unlock a profile, wipe a lost device, PIN rules, trusted devices, rules for devices that fall behind and for older Arcfin versions, and HTTPS away from home.
+  - Watch time and bedtime per person.
+  - Download limits for videos and music, shared accounts with Who's Watching, announcements and planned maintenance.
+  - Titles hidden from Continue Watching and Next Up, and recommendation rows for Home.
+  - Live control and history of watch parties and Pick Together sessions.
+  - Every feature is off until an administrator turns it on; Pick Together, hidden titles and signed commands stay on where they were already in use.
