@@ -1,0 +1,21 @@
+name: Release zips
+
+# Downloads every release zip the manifest lists and checks it against the manifest's MD5:
+# when a release is published (the zip has to be attached first), every Monday, and by hand.
+# A zip that's missing or differs means Jellyfin can't install that version.
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  zips:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Every release zip matches its checksum
+        run: python3 -I .gitea/scripts/check-release.py --zips

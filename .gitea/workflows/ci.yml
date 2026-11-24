@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Everything runs on the Ubuntu runner: the plugin is plain .NET, and the checks need only
+# git and Python.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.ArcfinSync.csproj -c Release
+      - name: Tests
+        run: dotnet test tests/Jellyfin.Plugin.ArcfinSync.Tests
+
+  # The version in the project, build.yaml and the newest manifest entry match, and every
+  # manifest entry points at its own release.
+  release-details:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version and manifest agree
+        run: python3 -I .gitea/scripts/check-release.py
+
+  # Merge commits are skipped: Gitea makes them when a PR is merged or its branch updated.
+  sign-off:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit has a Signed-off-by line
+        run: |
+          base="origin/${{ github.base_ref }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          missing=0
+          for commit in $(git rev-list --no-merges "$base..$head"); do
+            if ! git log -1 --format=%B "$commit" | grep -q '^Signed-off-by: '; then
+              echo "::error::$(git log -1 --format='%h %s' "$commit") has no Signed-off-by line (git commit -s)"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "All commits are signed off."
+          exit "$missing"
+
+  # Commit subjects follow Conventional Commits, <type>(scope): message, as in the app.
+  commit-format:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit subject is <type>(scope) message
+        run: python3 -I .gitea/scripts/check-commits.py "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
