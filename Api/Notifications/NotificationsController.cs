@@ -160,11 +160,22 @@ public class NotificationsAdminController : ControllerBase
     [HttpGet]
     public ActionResult<NotificationsAdminDto> Get() => NotificationsAdminDto.Current();
 
+    /// <summary>A null <see cref="NotificationsAdminBody.WebhookAddress"/> keeps the saved one; empty clears it.</summary>
     [HttpPut]
-    public ActionResult<NotificationsAdminDto> Put([FromBody] ToggleDto body)
+    public ActionResult<NotificationsAdminDto> Put([FromBody] NotificationsAdminBody body)
     {
         var plugin = Plugin.Instance!;
-        plugin.Configuration.Notifications = new NotificationSettings { Enabled = body?.Enabled ?? false };
+        var address = body?.WebhookAddress?.Trim().TrimEnd('/');
+        if (!string.IsNullOrEmpty(address) && !(Uri.TryCreate(address, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https"))
+        {
+            return BadRequest("The address must start with http:// or https://.");
+        }
+
+        plugin.Configuration.Notifications = new NotificationSettings
+        {
+            Enabled = body?.Enabled ?? false,
+            WebhookAddress = address is null ? plugin.Configuration.Notifications.WebhookAddress : address.Length == 0 ? null : address
+        };
         plugin.SaveConfiguration();
         if (plugin.Configuration.Notifications.Enabled && !SecretVault.Current.Has(NotificationsController.WebhookSecretName))
         {
@@ -213,9 +224,19 @@ public sealed class EventDto
     };
 }
 
+public sealed class NotificationsAdminBody
+{
+    public bool Enabled { get; set; }
+
+    public string? WebhookAddress { get; set; }
+}
+
 public sealed class NotificationsAdminDto
 {
     public bool Enabled { get; set; }
+
+    /// <summary>The saved address for Seerr to reach this server on; null for the dashboard's own.</summary>
+    public string? WebhookAddress { get; set; }
 
     /// <summary>Path of the webhook on this server, for Seerr's Webhook URL.</summary>
     public string WebhookPath { get; set; } = "/ArcfinSync/Notifications/Seerr";
@@ -231,6 +252,7 @@ public sealed class NotificationsAdminDto
     public static NotificationsAdminDto Current() => new()
     {
         Enabled = Plugin.Instance!.Configuration.Notifications.Enabled,
+        WebhookAddress = Plugin.Instance.Configuration.Notifications.WebhookAddress,
         WebhookSecret = SecretVault.Current.Get(NotificationsController.WebhookSecretName),
         SeerrConfigured = Integrations.SeerrClient.IsConfigured
     };

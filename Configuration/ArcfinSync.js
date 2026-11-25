@@ -852,7 +852,20 @@ function renderNotifications(view) {
     var saved = STATE.notifications || {};
     box.checked = !!saved.Enabled;
     view.querySelector("#afNotifyWebhook").hidden = !(saved.Enabled && saved.SeerrConfigured);
-    view.querySelector("#afNotifyUrl").value = ApiClient.serverAddress() + (saved.WebhookPath || "");
+    var address = view.querySelector("#afNotifyAddress");
+    var url = view.querySelector("#afNotifyUrl");
+    address.value = saved.WebhookAddress || ApiClient.serverAddress();
+    var showUrl = function () { url.value = address.value.trim().replace(/\/+$/, "") + (saved.WebhookPath || ""); };
+    showUrl();
+    address.oninput = showUrl;
+    view.querySelector("#afNotifyAddressSave").onclick = function () {
+        var typed = address.value.trim();
+        send("PUT", "Admin/Notifications", { Enabled: box.checked, WebhookAddress: typed === ApiClient.serverAddress() ? "" : typed }).then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+            Dashboard.processPluginConfigurationUpdateResult();
+        }, showError);
+    };
     view.querySelector("#afNotifySecret").value = saved.WebhookSecret || "";
     view.querySelector("#afNotifyPayload").value = saved.SeerrPayload || "";
     box.onchange = function () {

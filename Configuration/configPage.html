@@ -171,12 +171,16 @@
                         <p class="fieldDescription">Without a webhook, the server checks Seerr every ten minutes. For notifications within seconds of a change, set up Seerr's webhook in Seerr › Settings › Notifications › Webhook:</p>
                         <ol class="fieldDescription">
                             <li>Tick <b>Enable Agent</b>.</li>
-                            <li><b>Webhook URL:</b> the address below. If Seerr reaches Jellyfin on a different address (for example inside Docker), use that address with the same path.</li>
+                            <li><b>Webhook URL:</b> the URL below. If Seerr reaches Jellyfin on another address, such as a local or Docker one, enter it under Address and save; the URL follows.</li>
                             <li><b>Authorization Header:</b> the secret below. Leave Custom Headers empty.</li>
                             <li><b>JSON Payload:</b> replace it with the payload below.</li>
                             <li><b>Notification Types:</b> tick Request Approved, Request Declined and Request Available. The others aren't used.</li>
                             <li>Save, then press <b>Test</b>: Seerr should say the test notification was sent.</li>
                         </ol>
+                        <label class="afInline" style="display:block">Address Seerr reaches this server on <input type="url" class="afControl" id="afNotifyAddress" placeholder="http://jellyfin:8096" style="width:100%;max-width:40em" /></label>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised button-submit emby-button" id="afNotifyAddressSave"><span>Save Address</span></button>
+                        </div>
                         <label class="afInline" style="display:block">Webhook URL <input type="text" class="afControl" id="afNotifyUrl" readonly style="width:100%;max-width:40em" /></label>
                         <label class="afInline" style="display:block">Authorization Header <input type="text" class="afControl" id="afNotifySecret" readonly style="width:100%;max-width:40em" /></label>
                         <label class="afInline" style="display:block">JSON Payload <textarea class="afControl" id="afNotifyPayload" readonly rows="4" style="width:100%;max-width:40em;font-family:monospace"></textarea></label>

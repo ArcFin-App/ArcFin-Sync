@@ -65,6 +65,12 @@ public class PluginConfiguration : BasePluginConfiguration
 public class NotificationSettings
 {
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// The address Seerr reaches this server on, when it isn't the dashboard's own (a local or
+    /// Docker address, say). Only shown, to build the webhook URL for Seerr; nothing calls it.
+    /// </summary>
+    public string? WebhookAddress { get; set; }
 }
 
 public class DownloadLimitSettings
