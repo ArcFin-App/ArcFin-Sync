@@ -113,16 +113,24 @@ public sealed class SeerrWatchService : BackgroundService
             return string.Empty;
         }
 
-        using var response = await client.SendAsync(HttpMethod.Get, $"{request.MediaType}/{tmdb}", null, null, null, token).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        // The change is already recorded, so a title Seerr can't give now mustn't lose the event.
+        try
+        {
+            using var response = await client.SendAsync(HttpMethod.Get, $"{request.MediaType}/{tmdb}", null, null, null, token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return string.Empty;
+            }
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+            return doc.RootElement.TryGetProperty(request.MediaType == "movie" ? "title" : "name", out var name) && name.ValueKind == JsonValueKind.String
+                ? name.GetString() ?? string.Empty
+                : string.Empty;
+        }
+        catch (Exception e) when (e is SeerrUnreachableException or JsonException or HttpRequestException)
         {
             return string.Empty;
         }
-
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
-        return doc.RootElement.TryGetProperty(request.MediaType == "movie" ? "title" : "name", out var name) && name.ValueKind == JsonValueKind.String
-            ? name.GetString() ?? string.Empty
-            : string.Empty;
     }
 }
 
