@@ -165,7 +165,7 @@
                 </div>
                 <div class="afCard">
                     <h3 class="afCardTitle">Notifications</h3>
-                    <p class="fieldDescription">Arcfin tells people when a Seerr request of theirs is approved, declined or available, about announcements, and a day before planned maintenance. It asks this server when it opens and when the system lets it run in the background, so notifications can arrive a while after the change.</p>
+                    <p class="fieldDescription">Arcfin tells people about their Seerr requests, requests waiting for approval or that failed (for those who manage requests), Seerr issues and their comments, announcements, and a day before planned maintenance. It asks this server when it opens and when the system lets it run in the background, so notifications can arrive a while after the change.</p>
                     <label class="afInline"><input type="checkbox" id="afNotifyEnabled" /> <span>Notifications are on</span></label>
                     <div id="afNotifyTestWrap" hidden>
                         <label class="inputLabel" for="afNotifyTestUser" style="margin-top:0.8em;display:block">Send a test notification to</label>
@@ -198,7 +198,7 @@
                         <textarea class="afControl" id="afNotifyPayload" readonly rows="4" style="width:100%;max-width:32em;font-family:monospace;box-sizing:border-box"></textarea>
                         <div class="fieldDescription">Replace Seerr's payload with this.</div>
                         <label class="inputLabel" style="margin-top:0.8em;display:block">Notification Types</label>
-                        <div class="fieldDescription">Tick Request Approved, Request Declined and Request Available. The others aren't used.</div>
+                        <div class="fieldDescription">Tick all of them. Arcfin tells the same people Seerr would: whoever asked or reported, and the people who manage requests or issues.</div>
                         <div class="fieldDescription" style="margin-top:0.8em">Save in Seerr, then press <b>Test</b> there. This page shows when the test arrives.</div>
                         <div class="afButtons">
                             <button is="emby-button" type="button" class="raised emby-button" id="afNotifyWait"><span>Wait for Seerr's Test</span></button>
