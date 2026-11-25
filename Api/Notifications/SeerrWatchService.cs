@@ -15,10 +15,13 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.ArcfinSync.Api.Notifications;
 
 /// <summary>
-/// Looks at Seerr's newest requests every ten minutes, or straight away when Seerr's webhook
-/// says something changed, and records approved, declined and available ones as events for the
-/// person who asked. A webhook names the request and what Seerr says happened; the check then
-/// reads that request from Seerr itself, so a webhook alone never makes an event.
+/// Looks at Seerr's newest requests and issues every ten minutes, or straight away when Seerr's
+/// webhook says something changed, and records events for the people Seerr itself would tell:
+/// approved, declined and available requests for whoever asked; new, automatically approved
+/// and failed requests for the people who manage requests; and reported issues, comments,
+/// resolved and reopened issues for whoever reported them and the people who manage issues.
+/// A webhook names the request or issue and what happened; the check then reads it from Seerr
+/// itself, so a webhook alone never makes an event.
 /// </summary>
 public sealed class SeerrWatchService : BackgroundService
 {
@@ -27,6 +30,9 @@ public sealed class SeerrWatchService : BackgroundService
 
     /// <summary>Requests named by webhooks since the last check, with what Seerr said happened.</summary>
     private static readonly ConcurrentDictionary<int, string?> Named = new();
+
+    /// <summary>Issues named by webhooks since the last check.</summary>
+    private static readonly ConcurrentDictionary<int, bool> NamedIssues = new();
     private readonly IHttpClientFactory _http;
     private readonly ILogger<SeerrWatchService> _logger;
 
@@ -37,11 +43,16 @@ public sealed class SeerrWatchService : BackgroundService
     }
 
     /// <summary>Checks soon; several calls before the check runs make one check.</summary>
-    public static void Wake(int? requestId = null, string? kind = null)
+    public static void Wake(int? requestId = null, string? kind = null, int? issueId = null)
     {
         if (requestId is { } id)
         {
             Named[id] = kind;
+        }
+
+        if (issueId is { } issue)
+        {
+            NamedIssues[issue] = true;
         }
 
         try
@@ -86,6 +97,15 @@ public sealed class SeerrWatchService : BackgroundService
         }
 
         var client = new SeerrClient(_http);
+        var events = new List<ServerEvent>();
+        var permissions = await client.UserPermissionsAsync(token).ConfigureAwait(false);
+        await CheckRequestsAsync(client, permissions, events, token).ConfigureAwait(false);
+        await CheckIssuesAsync(client, permissions, events, token).ConfigureAwait(false);
+        EventStore.Current.Add(events, DateTime.UtcNow);
+    }
+
+    private async Task CheckRequestsAsync(SeerrClient client, IReadOnlyDictionary<Guid, int> permissions, List<ServerEvent> events, CancellationToken token)
+    {
         using var response = await client.SendAsync(HttpMethod.Get, "request", "?take=100&skip=0&sort=modified&filter=all", null, null, token).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
@@ -97,43 +117,112 @@ public sealed class SeerrWatchService : BackgroundService
         foreach (var (id, _, _) in named.Where(n => requests.All(r => r.Id != n.Id)))
         {
             // Older than Seerr's newest hundred: read it on its own.
-            using var one = await client.SendAsync(HttpMethod.Get, $"request/{id}", null, null, null, token).ConfigureAwait(false);
-            if (one.IsSuccessStatusCode)
+            if (await ReadOneAsync(client, $"request/{id}", token).ConfigureAwait(false) is { } doc)
             {
-                using var doc = JsonDocument.Parse(await one.Content.ReadAsStringAsync(token).ConfigureAwait(false));
-                if (SeerrRequests.ParseOne(doc.RootElement) is { } request)
+                using (doc)
                 {
-                    requests.Add(request);
+                    if (SeerrRequests.ParseOne(doc.RootElement) is { } request)
+                    {
+                        requests.Add(request);
+                    }
                 }
             }
         }
 
-        var states = new SeerrStateFile(Plugin.Instance.DataFolderPath);
-        var changes = states.Update(requests, named.Where(n => n.Kind is not null).ToDictionary(n => n.Id, n => n.Kind!));
-        if (changes.Count == 0)
+        var changes = new SeerrStateFile(Plugin.Instance!.DataFolderPath)
+            .Update(requests, named.Where(n => n.Kind is not null).ToDictionary(n => n.Id, n => n.Kind!));
+        foreach (var (request, kind) in changes)
+        {
+            var people = SeerrRecipients.ForRequest(kind, request, permissions);
+            if (people.Count == 0)
+            {
+                continue;
+            }
+
+            var title = await TitleAsync(client, request.TmdbId, request.MediaType, token).ConfigureAwait(false);
+            events.AddRange(people.Select(person => new ServerEvent
+            {
+                Id = $"seerr-{kind}.{request.Id}", Kind = $"seerr-{kind}", UserId = person, Title = title, RequestId = request.Id
+            }));
+        }
+    }
+
+    private async Task CheckIssuesAsync(SeerrClient client, IReadOnlyDictionary<Guid, int> permissions, List<ServerEvent> events, CancellationToken token)
+    {
+        using var response = await client.SendAsync(HttpMethod.Get, "issue", "?take=50&skip=0&sort=modified&filter=all", null, null, token).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
         {
             return;
         }
 
-        var events = new List<ServerEvent>();
-        foreach (var (request, kind) in changes)
+        var issues = SeerrIssues.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+        var named = NamedIssues.Keys.ToList().Where(id => NamedIssues.TryRemove(id, out _)).ToList();
+        var states = new IssueStateFile(Plugin.Instance!.DataFolderPath);
+        // Seerr's list leaves comments out; read each issue that changed (or a webhook named) in full.
+        foreach (var id in states.NeedingComments(issues, named))
         {
-            events.Add(new ServerEvent
+            if (await ReadOneAsync(client, $"issue/{id}", token).ConfigureAwait(false) is not { } doc)
             {
-                Id = $"seerr-{kind}.{request.Id}",
-                Kind = $"seerr-{kind}",
-                UserId = request.JellyfinUserId,
-                Title = await TitleAsync(client, request, token).ConfigureAwait(false),
-                RequestId = request.Id
-            });
+                continue;
+            }
+
+            using (doc)
+            {
+                if (SeerrIssues.ParseOne(doc.RootElement) is { } full)
+                {
+                    issues.RemoveAll(i => i.Id == id);
+                    issues.Add(full);
+                }
+            }
         }
 
-        EventStore.Current.Add(events, DateTime.UtcNow);
+        foreach (var change in states.Update(issues))
+        {
+            var people = SeerrRecipients.ForIssue(change, permissions);
+            if (people.Count == 0)
+            {
+                continue;
+            }
+
+            var issue = change.Issue;
+            var id = change.Kind switch
+            {
+                "comment" => $"issue-comment.{change.Comment!.Id}",
+                "reported" => $"issue-reported.{issue.Id}",
+                _ => $"issue-{change.Kind}.{issue.Id}.{change.Count}"
+            };
+            var actor = change.Kind switch
+            {
+                "reported" => issue.ReportedBy.Name,
+                "comment" => change.Comment?.By.Name,
+                _ => issue.ModifiedBy.Name
+            };
+            var body = change.Comment?.Message is { Length: > 0 } text ? (text.Length > 200 ? text[..200] + "…" : text) : null;
+            var title = await TitleAsync(client, issue.TmdbId, issue.MediaType, token).ConfigureAwait(false);
+            events.AddRange(people.Select(person => new ServerEvent
+            {
+                Id = id, Kind = $"issue-{change.Kind}", UserId = person, Title = title, Body = body, IssueId = issue.Id, IssueType = issue.IssueType,
+                ProblemSeason = issue.ProblemSeason, ProblemEpisode = issue.ProblemEpisode, Actor = actor
+            }));
+        }
     }
 
-    private static async Task<string> TitleAsync(SeerrClient client, SeerrRequest request, CancellationToken token)
+    private static async Task<JsonDocument?> ReadOneAsync(SeerrClient client, string path, CancellationToken token)
     {
-        if (request.TmdbId is not { } tmdb || request.MediaType is not ("movie" or "tv"))
+        try
+        {
+            using var response = await client.SendAsync(HttpMethod.Get, path, null, null, null, token).ConfigureAwait(false);
+            return response.IsSuccessStatusCode ? JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false)) : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static async Task<string> TitleAsync(SeerrClient client, int? tmdbId, string? mediaType, CancellationToken token)
+    {
+        if (tmdbId is not { } tmdb || mediaType is not ("movie" or "tv"))
         {
             return string.Empty;
         }
@@ -141,14 +230,14 @@ public sealed class SeerrWatchService : BackgroundService
         // The change is already recorded, so a title Seerr can't give now mustn't lose the event.
         try
         {
-            using var response = await client.SendAsync(HttpMethod.Get, $"{request.MediaType}/{tmdb}", null, null, null, token).ConfigureAwait(false);
+            using var response = await client.SendAsync(HttpMethod.Get, $"{mediaType}/{tmdb}", null, null, null, token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 return string.Empty;
             }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
-            return doc.RootElement.TryGetProperty(request.MediaType == "movie" ? "title" : "name", out var name) && name.ValueKind == JsonValueKind.String
+            return doc.RootElement.TryGetProperty(mediaType == "movie" ? "title" : "name", out var name) && name.ValueKind == JsonValueKind.String
                 ? name.GetString() ?? string.Empty
                 : string.Empty;
         }
@@ -204,6 +293,9 @@ public static class SeerrRequests
         "MEDIA_APPROVED" => "approved",
         "MEDIA_DECLINED" => "declined",
         "MEDIA_AVAILABLE" => "available",
+        "MEDIA_PENDING" => "pending",
+        "MEDIA_AUTO_APPROVED" => "auto-approved",
+        "MEDIA_FAILED" => "failed",
         _ => null
     };
 
@@ -213,6 +305,9 @@ public static class SeerrRequests
         "approved" => now.Status == 2,
         "declined" => now.Status == 3,
         "available" => now.MediaStatus == 5,
+        "pending" => now.Status == 1,
+        "auto-approved" => now.Status == 2,
+        "failed" => now.Status == 4,
         _ => false
     };
 
@@ -220,14 +315,15 @@ public static class SeerrRequests
         => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : null;
 
     /// <summary>
-    /// What a request's new state is worth telling its requester, the same way Arcfin decides on
-    /// a device: available beats approved, which beats declined. Null for nothing.
+    /// What a request's new state is worth telling, the same way Arcfin decides on a device:
+    /// available beats approved, which beats declined, then failed. A request seen for the first
+    /// time is new: pending, or automatically approved. Null for nothing.
     /// </summary>
     public static string? Change(string? before, SeerrRequest now)
     {
         if (before is null)
         {
-            return null;
+            return now.Status switch { 1 => "pending", 2 => "auto-approved", _ => null };
         }
 
         var parts = before.Split('-');
@@ -243,13 +339,21 @@ public static class SeerrRequests
             return "approved";
         }
 
-        return now.Status == 3 && oldStatus != 3 ? "declined" : null;
+        if (now.Status == 3 && oldStatus != 3)
+        {
+            return "declined";
+        }
+
+        return now.Status == 4 && oldStatus != 4 ? "failed" : null;
     }
 
     public static string State(SeerrRequest request) => $"{request.Status}-{request.MediaStatus}";
 }
 
-/// <summary>Each request's last seen state. The first check only records them, so nothing old is announced.</summary>
+/// <summary>
+/// Each request's last seen state. The first check only records them, so nothing old is
+/// announced. Who's told about a change is <see cref="SeerrRecipients.ForRequest"/>'s call.
+/// </summary>
 public sealed class SeerrStateFile
 {
     private const int Limit = 2000;
@@ -279,7 +383,7 @@ public sealed class SeerrStateFile
                 var kind = before is null && named?.GetValueOrDefault(request.Id) is { } hinted && SeerrRequests.Agrees(hinted, request)
                     ? hinted
                     : saved is not null ? SeerrRequests.Change(before, request) : null;
-                if (request.JellyfinUserId is not null && kind is not null)
+                if (kind is not null)
                 {
                     changes.Add((request, kind));
                 }

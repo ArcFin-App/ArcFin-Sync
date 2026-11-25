@@ -89,7 +89,11 @@ public sealed class ServerEvent
     /// </summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>seerr-approved, seerr-declined, seerr-available, announcement, maintenance or test.</summary>
+    /// <summary>
+    /// seerr-approved, seerr-declined, seerr-available, seerr-pending, seerr-auto-approved,
+    /// seerr-failed, issue-reported, issue-comment, issue-resolved, issue-reopened, announcement,
+    /// maintenance or test.
+    /// </summary>
     public string Kind { get; set; } = string.Empty;
 
     /// <summary>Null for everyone.</summary>
@@ -100,6 +104,18 @@ public sealed class ServerEvent
     public string? Body { get; set; }
 
     public int? RequestId { get; set; }
+
+    public int? IssueId { get; set; }
+
+    /// <summary>Seerr's issue type: 1 video, 2 audio, 3 subtitles, 4 other.</summary>
+    public int? IssueType { get; set; }
+
+    public int? ProblemSeason { get; set; }
+
+    public int? ProblemEpisode { get; set; }
+
+    /// <summary>Seerr's display name for whoever reported, commented, resolved or reopened.</summary>
+    public string? Actor { get; set; }
 
     public DateTime? Starts { get; set; }
 

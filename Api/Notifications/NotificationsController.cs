@@ -16,8 +16,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Jellyfin.Plugin.ArcfinSync.Api.Notifications;
 
 /// <summary>
-/// News for Arcfin to show as notifications: Seerr request changes, announcements and planned
-/// maintenance. Arcfin asks when it opens and when the system lets it run in the background;
+/// News for Arcfin to show as notifications: Seerr request and issue changes, announcements and
+/// planned maintenance. Arcfin asks when it opens and when the system lets it run in the background;
 /// nothing is pushed.
 /// </summary>
 [ApiController]
@@ -107,21 +107,21 @@ public class NotificationsController : ControllerBase
         }
 
         using var reader = new System.IO.StreamReader(Request.Body);
-        var (type, requestId) = ReadPayload(await reader.ReadToEndAsync(HttpContext.RequestAborted).ConfigureAwait(false));
+        var (type, requestId, issueId) = ReadPayload(await reader.ReadToEndAsync(HttpContext.RequestAborted).ConfigureAwait(false));
         log.Record(type is null ? "unreadable" : type == "TEST_NOTIFICATION" ? "test" : "ok", type, DateTime.UtcNow);
         if (type != "TEST_NOTIFICATION")
         {
-            SeerrWatchService.Wake(requestId, SeerrRequests.KindOf(type));
+            SeerrWatchService.Wake(requestId, SeerrRequests.KindOf(type), issueId);
         }
 
         return NoContent();
     }
 
     /// <summary>The payload to paste into Seerr's JSON Payload field.</summary>
-    public const string SeerrPayload = "{\n  \"notification_type\": \"{{notification_type}}\",\n  \"request_id\": \"{{request_id}}\"\n}";
+    public const string SeerrPayload = "{\n  \"notification_type\": \"{{notification_type}}\",\n  \"request_id\": \"{{request_id}}\",\n  \"issue_id\": \"{{issue_id}}\"\n}";
 
-    /// <summary>notification_type and request_id from a webhook; anything unreadable is null.</summary>
-    public static (string? Type, int? RequestId) ReadPayload(string body)
+    /// <summary>notification_type, request_id and issue_id from a webhook; anything unreadable is null.</summary>
+    public static (string? Type, int? RequestId, int? IssueId) ReadPayload(string body)
     {
         try
         {
@@ -129,20 +129,29 @@ public class NotificationsController : ControllerBase
             var root = doc.RootElement;
             if (root.ValueKind != System.Text.Json.JsonValueKind.Object)
             {
-                return (null, null);
+                return (null, null, null);
             }
 
             var type = root.TryGetProperty("notification_type", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String ? t.GetString() : null;
-            int? id = root.TryGetProperty("request_id", out var r)
-                ? r.ValueKind == System.Text.Json.JsonValueKind.Number && r.TryGetInt32(out var n) ? n
-                  : r.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(r.GetString(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : null
-                : null;
-            return (type, id);
+            return (type, Id(root, "request_id"), Id(root, "issue_id"));
         }
         catch (System.Text.Json.JsonException)
         {
-            return (null, null);
+            return (null, null, null);
         }
+    }
+
+    /// <summary>Seerr fills its variables in as text, and leaves them empty when they don't apply.</summary>
+    private static int? Id(System.Text.Json.JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var value))
+        {
+            return null;
+        }
+
+        return value.ValueKind == System.Text.Json.JsonValueKind.Number && value.TryGetInt32(out var n) ? n
+            : value.ValueKind == System.Text.Json.JsonValueKind.String
+              && int.TryParse(value.GetString(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : null;
     }
 
     public static bool Matches(string given, string secret)
@@ -239,13 +248,26 @@ public sealed class EventDto
 
     public int? RequestId { get; set; }
 
+    public int? IssueId { get; set; }
+
+    /// <summary>Seerr's issue type: 1 video, 2 audio, 3 subtitles, 4 other.</summary>
+    public int? IssueType { get; set; }
+
+    public int? ProblemSeason { get; set; }
+
+    public int? ProblemEpisode { get; set; }
+
+    /// <summary>Seerr's display name for whoever reported, commented, resolved or reopened.</summary>
+    public string? Actor { get; set; }
+
     public DateTime? Starts { get; set; }
 
     public DateTime? Ends { get; set; }
 
     public static EventDto From(ServerEvent e) => new()
     {
-        Id = e.Id, Kind = e.Kind, Title = e.Title, Body = e.Body, RequestId = e.RequestId, Starts = e.Starts, Ends = e.Ends
+        Id = e.Id, Kind = e.Kind, Title = e.Title, Body = e.Body, RequestId = e.RequestId, IssueId = e.IssueId, IssueType = e.IssueType,
+        ProblemSeason = e.ProblemSeason, ProblemEpisode = e.ProblemEpisode, Actor = e.Actor, Starts = e.Starts, Ends = e.Ends
     };
 }
 
