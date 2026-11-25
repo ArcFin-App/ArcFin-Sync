@@ -847,6 +847,29 @@ function renderRecs(view) {
     };
 }
 
+function renderNotifications(view) {
+    var box = view.querySelector("#afNotifyEnabled");
+    var saved = STATE.notifications || {};
+    box.checked = !!saved.Enabled;
+    view.querySelector("#afNotifyWebhook").hidden = !(saved.Enabled && saved.SeerrConfigured);
+    view.querySelector("#afNotifyUrl").value = ApiClient.serverAddress() + (saved.WebhookPath || "");
+    view.querySelector("#afNotifySecret").value = saved.WebhookSecret || "";
+    box.onchange = function () {
+        send("PUT", "Admin/Notifications", { Enabled: box.checked }).then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+            Dashboard.processPluginConfigurationUpdateResult();
+        }, function (err) { box.checked = !box.checked; showError(err); });
+    };
+    view.querySelector("#afNotifyReset").onclick = function () {
+        if (!window.confirm("Make a new secret? Seerr's webhook stops working until you paste the new one into it.")) { return; }
+        sendForJson("POST", "Admin/Notifications/Secret/Reset").then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+        }, showError);
+    };
+}
+
 function renderHidden(view) {
     var box = view.querySelector("#afHiddenEnabled");
     box.checked = !!(STATE.hidden && STATE.hidden.Enabled);
@@ -1716,6 +1739,7 @@ function renderAll(view) {
     renderAccess(view, STATE.party, "#afPartyEnabled", "#afPartyUsers");
     renderRecs(view);
     renderHidden(view);
+    renderNotifications(view);
     renderIntegrations(view);
     renderSecurity(view);
     renderLimits(view);
@@ -1740,8 +1764,9 @@ function reload(view, keepTab) {
     return Promise.all([
         getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status"), getJson("Admin/PickTogether"),
         getJson("Admin/WatchParty"), getJson("Admin/Recommendations"), getJson("Admin/Integrations"), getJson("Admin/Security"), getJson("Admin/Limits"),
-        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden")
+        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden"), getJson("Admin/Notifications")
     ]).then(function (results) {
+        STATE.notifications = results[14];
         STATE.household = results[12];
         STATE.hidden = results[13];
         STATE.live = results[10];

@@ -164,6 +164,19 @@
                     </div>
                 </div>
                 <div class="afCard">
+                    <h3 class="afCardTitle">Notifications</h3>
+                    <p class="fieldDescription">Arcfin tells people when a Seerr request of theirs is approved, declined or available, about announcements, and a day before planned maintenance. It asks this server when it opens and when the system lets it run in the background, so notifications can arrive a while after the change.</p>
+                    <label class="afInline"><input type="checkbox" id="afNotifyEnabled" /> <span>Notifications are on</span></label>
+                    <div id="afNotifyWebhook" hidden>
+                        <p class="fieldDescription">For notifications within seconds of a change, add a webhook in Seerr (Settings › Notifications › Webhook) with this address and Authorization Header, and turn on the request events. Without it, the server checks Seerr every ten minutes.</p>
+                        <label class="afInline" style="display:block">Webhook URL <input type="text" class="afControl" id="afNotifyUrl" readonly style="width:100%;max-width:40em" /></label>
+                        <label class="afInline" style="display:block">Authorization Header <input type="text" class="afControl" id="afNotifySecret" readonly style="width:100%;max-width:40em" /></label>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button afDanger" id="afNotifyReset"><span>New Secret</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="afCard">
                     <h3 class="afCardTitle">Waiting to Send</h3>
                     <p class="fieldDescription">Requests made while Seerr couldn't be reached. The server tries again every few minutes for three days.</p>
                     <div id="afQueue"></div>
