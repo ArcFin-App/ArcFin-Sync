@@ -5,6 +5,8 @@
 
 A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). Installs on your Jellyfin server, keeps each user's Arcfin settings in step across their devices, and lets the server's administrators set defaults and locks for those settings.
 
+> **Where Arcfin Sync lives:** the code, pull requests and releases are on [git.psmattas.com/ArcFin/Arcfin-Sync](https://git.psmattas.com/ArcFin/Arcfin-Sync), and its issues go in the [ArcFin issue tracker](https://git.psmattas.com/ArcFin/ArcFin/issues). The copy on GitHub is a read-only mirror, so please open issues and pull requests on git.psmattas.com.
+
 ## What it does
 
 - **Settings catalogue.** Carries the same list of Arcfin settings as the app (key, type, title, default, choices, which platforms show it) and serves it to signed-in users. Only settings in the catalogue are stored.
