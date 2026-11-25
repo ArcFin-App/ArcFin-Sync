@@ -177,3 +177,22 @@ public class NotificationFeedTests
         Assert.StartsWith("announcement.", events[0].Id, StringComparison.Ordinal);
     }
 }
+
+public class WebhookLogTests
+{
+    [Fact]
+    public void KeepsTheLastCallAndThrottlesRejectedOnes()
+    {
+        using var dir = new TempFolder();
+        var log = new WebhookLog(dir.Path);
+        var now = DateTime.UtcNow;
+        Assert.Null(log.Last);
+
+        log.Record("wrongSecret", null, now);
+        log.Record("wrongSecret", null, now.AddSeconds(3));
+        Assert.Equal(now, log.Last!.Time);
+
+        log.Record("test", "TEST_NOTIFICATION", now.AddSeconds(4));
+        Assert.Equal(("test", "TEST_NOTIFICATION"), (log.Last!.Result, log.Last.Type));
+    }
+}

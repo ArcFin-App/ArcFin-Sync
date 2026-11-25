@@ -98,13 +98,17 @@ public class NotificationsController : ControllerBase
         }
 
         var secret = SecretVault.Current.Get(WebhookSecretName);
-        if (string.IsNullOrEmpty(secret) || !Matches(Request.Headers.Authorization.ToString(), secret))
+        var given = Request.Headers.Authorization.ToString();
+        var log = WebhookLog.Current;
+        if (string.IsNullOrEmpty(secret) || !Matches(given, secret))
         {
+            log.Record(string.IsNullOrWhiteSpace(given) ? "missingSecret" : "wrongSecret", null, DateTime.UtcNow);
             return Unauthorized();
         }
 
         using var reader = new System.IO.StreamReader(Request.Body);
         var (type, requestId) = ReadPayload(await reader.ReadToEndAsync(HttpContext.RequestAborted).ConfigureAwait(false));
+        log.Record(type is null ? "unreadable" : type == "TEST_NOTIFICATION" ? "test" : "ok", type, DateTime.UtcNow);
         if (type != "TEST_NOTIFICATION")
         {
             SeerrWatchService.Wake(requestId, SeerrRequests.KindOf(type));
@@ -249,11 +253,15 @@ public sealed class NotificationsAdminDto
     /// <summary>For Seerr's JSON Payload field.</summary>
     public string SeerrPayload { get; set; } = NotificationsController.SeerrPayload;
 
+    /// <summary>The last call from Seerr's webhook, or null before the first.</summary>
+    public WebhookCall? LastWebhook { get; set; }
+
     public static NotificationsAdminDto Current() => new()
     {
         Enabled = Plugin.Instance!.Configuration.Notifications.Enabled,
         WebhookAddress = Plugin.Instance.Configuration.Notifications.WebhookAddress,
         WebhookSecret = SecretVault.Current.Get(NotificationsController.WebhookSecretName),
-        SeerrConfigured = Integrations.SeerrClient.IsConfigured
+        SeerrConfigured = Integrations.SeerrClient.IsConfigured,
+        LastWebhook = WebhookLog.Current.Last
     };
 }

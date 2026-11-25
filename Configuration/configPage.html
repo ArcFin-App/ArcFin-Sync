@@ -190,7 +190,11 @@
                         <div class="fieldDescription">Replace Seerr's payload with this.</div>
                         <label class="inputLabel" style="margin-top:0.8em;display:block">Notification Types</label>
                         <div class="fieldDescription">Tick Request Approved, Request Declined and Request Available. The others aren't used.</div>
-                        <div class="fieldDescription" style="margin-top:0.8em">Save in Seerr, then press <b>Test</b>. Seerr should say the test notification was sent.</div>
+                        <div class="fieldDescription" style="margin-top:0.8em">Save in Seerr, then press <b>Test</b> there. This page shows when the test arrives.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button" id="afNotifyWait"><span>Wait for Seerr's Test</span></button>
+                        </div>
+                        <div class="fieldDescription" id="afNotifyLast" style="margin-top:0.4em"></div>
                     </div>
                 </div>
                 <div class="afCard">

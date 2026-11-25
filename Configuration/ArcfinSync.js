@@ -868,6 +868,8 @@ function renderNotifications(view) {
     };
     view.querySelector("#afNotifySecret").value = saved.WebhookSecret || "";
     view.querySelector("#afNotifyPayload").value = saved.SeerrPayload || "";
+    showLastWebhook(view, saved.LastWebhook);
+    view.querySelector("#afNotifyWait").onclick = function () { waitForWebhook(view); };
     box.onchange = function () {
         send("PUT", "Admin/Notifications", { Enabled: box.checked }).then(function (result) {
             STATE.notifications = result;
@@ -882,6 +884,46 @@ function renderNotifications(view) {
             renderNotifications(view);
         }, showError);
     };
+}
+
+var WEBHOOK_RESULTS = {
+    test: "Seerr's test arrived. The webhook works.",
+    ok: "A notification from Seerr arrived.",
+    unreadable: "Seerr's call arrived, but its JSON Payload isn't the one above. Paste it again.",
+    missingSecret: "Seerr called without an Authorization Header. Paste the secret above into it.",
+    wrongSecret: "Seerr called with the wrong Authorization Header. Paste the secret above again."
+};
+
+function showLastWebhook(view, last) {
+    var line = view.querySelector("#afNotifyLast");
+    if (!last) { line.textContent = "Nothing from Seerr's webhook yet."; return; }
+    var when = new Date(last.Time).toLocaleString();
+    line.textContent = (WEBHOOK_RESULTS[last.Result] || last.Result) + " (" + when + ")";
+}
+
+// Asks every few seconds for a minute, until a call newer than the one shown arrives.
+function waitForWebhook(view) {
+    var button = view.querySelector("#afNotifyWait");
+    var before = STATE.notifications && STATE.notifications.LastWebhook ? STATE.notifications.LastWebhook.Time : null;
+    var tries = 0;
+    button.disabled = true;
+    view.querySelector("#afNotifyLast").textContent = "Waiting for Seerr's test… Press Test in Seerr now.";
+    var timer = setInterval(function () {
+        tries++;
+        getJson("Admin/Notifications").then(function (result) {
+            var last = result.LastWebhook;
+            if (last && last.Time !== before) {
+                clearInterval(timer);
+                button.disabled = false;
+                STATE.notifications = result;
+                showLastWebhook(view, last);
+            } else if (tries >= 20) {
+                clearInterval(timer);
+                button.disabled = false;
+                view.querySelector("#afNotifyLast").textContent = "Nothing arrived in a minute. Check the Webhook URL is one Seerr can reach, and that Enable Agent is ticked.";
+            }
+        }, function () { if (tries >= 20) { clearInterval(timer); button.disabled = false; } });
+    }, 3000);
 }
 
 function renderHidden(view) {
