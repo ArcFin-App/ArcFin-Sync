@@ -321,3 +321,23 @@ public class SeerrIssueTests
         Assert.Equal(2, change.Comment!.Id);
     }
 }
+
+public class LiveNudgeTests
+{
+    [Fact]
+    public void OnlyOpenArcfinSessionsOfThePeopleItsForAreTold()
+    {
+        var me = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        MediaBrowser.Controller.Session.SessionInfo Session(string client, Guid user, bool active)
+        {
+            var s = new MediaBrowser.Controller.Session.SessionInfo(null!, null!) { Client = client, UserId = user, Id = Guid.NewGuid().ToString("N") };
+            s.LastActivityDate = active ? DateTime.UtcNow : DateTime.UtcNow.AddHours(-2);
+            return s;
+        }
+
+        var sessions = new[] { Session("Arcfin", me, true), Session("Jellyfin Web", me, true), Session("Arcfin", other, true) };
+        Assert.Single(LiveNudgeService.Targets(sessions, false, new HashSet<Guid> { me }));
+        Assert.Equal(2, LiveNudgeService.Targets(sessions, true, new HashSet<Guid>()).Count());
+    }
+}

@@ -241,6 +241,11 @@ public class HouseholdAdminController : ControllerBase
             Ends = a.Ends?.ToUniversalTime(),
             Users = a.Users.Where(u => _userManager.GetUserById(u) is not null).Distinct().ToList()
         }).ToList());
+        if (Plugin.Instance!.Configuration.Notifications.Enabled)
+        {
+            Notifications.EventStore.Announce(new Guid?[] { null });
+        }
+
         return Dto();
     }
 

@@ -38,11 +38,12 @@ public sealed class EventStore
 
     public void Add(IEnumerable<ServerEvent> events, DateTime now)
     {
+        var list = events.ToList();
         lock (Gate)
         {
             var file = Read();
             var added = false;
-            foreach (var e in events)
+            foreach (var e in list)
             {
                 e.Seq = ++file.Last;
                 e.Created = now;
@@ -58,7 +59,15 @@ public sealed class EventStore
             file.Events = file.Events.Where(e => now - e.Created < KeepFor).TakeLast(Limit).ToList();
             JsonFile.Write(_path, file);
         }
+
+        Added?.Invoke(list.Select(e => e.UserId).ToList());
     }
+
+    /// <summary>After events are stored, with who they're for (null for everyone), so open Arcfins can be told.</summary>
+    public static event Action<IReadOnlyList<Guid?>>? Added;
+
+    /// <summary>For news that isn't stored, such as announcements, which come with every read.</summary>
+    public static void Announce(IReadOnlyList<Guid?> users) => Added?.Invoke(users);
 
     /// <summary>This person's events after <paramref name="since"/>, oldest first.</summary>
     public List<ServerEvent> After(long since, Guid userId)
