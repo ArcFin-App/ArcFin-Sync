@@ -107,7 +107,7 @@ public class ArcfinSyncController : ControllerBase
             Installed = true,
             Version = Plugin.Instance!.Version.ToString(),
             ApiVersion = 2,
-            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether", "hidden", "integrations", "signedCommands", "limits", "watchParty", "recommendations", "downloadLimits", "sharedAccounts", "announcements", "maintenance", "trustedDevices", "wipe", "pinRules", "requireHttps" },
+            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether", "hidden", "integrations", "signedCommands", "limits", "watchParty", "recommendations", "downloadLimits", "sharedAccounts", "announcements", "maintenance", "trustedDevices", "wipe", "pinRules", "requireHttps", "notifications" },
             Enabled = EnabledFeatures(Plugin.Instance.Configuration)
         };
     }
@@ -138,6 +138,7 @@ public class ArcfinSyncController : ControllerBase
         Add(config.Security.Enabled, "wipe");
         Add(config.Security.Enabled && (config.Security.Pins.RequiredFor != "none" || config.Security.Pins.MaxTries is not null), "pinRules");
         Add(config.Security.Enabled && config.Security.RequireHttpsAway, "requireHttps");
+        Add(config.Notifications.Enabled, "notifications");
         Add(Integrations.SeerrClient.IsConfigured || Security.SecretVault.Current.Has(Integrations.SeerrClient.TmdbKeyName), "integrations");
         return on;
     }

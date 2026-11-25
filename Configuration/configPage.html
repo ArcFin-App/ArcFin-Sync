@@ -164,6 +164,49 @@
                     </div>
                 </div>
                 <div class="afCard">
+                    <h3 class="afCardTitle">Notifications</h3>
+                    <p class="fieldDescription">Arcfin tells people about their Seerr requests, requests waiting for approval or that failed (for those who manage requests), Seerr issues and their comments, announcements, and a day before planned maintenance. It asks this server when it opens and when the system lets it run in the background, so notifications can arrive a while after the change.</p>
+                    <label class="afInline"><input type="checkbox" id="afNotifyEnabled" /> <span>Notifications are on</span></label>
+                    <div id="afNotifyTestWrap" hidden>
+                        <label class="inputLabel" for="afNotifyTestUser" style="margin-top:0.8em;display:block">Send a test notification to</label>
+                        <select is="emby-select" class="afControl" id="afNotifyTestUser" style="width:100%;max-width:32em"></select>
+                        <div class="fieldDescription">Their Arcfin devices show it on their next check: when Arcfin opens, or when the system lets it run in the background. A device that has never checked before only starts counting from its first check.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button" id="afNotifyTestSend"><span>Send Test Notification</span></button>
+                        </div>
+                        <div class="fieldDescription" id="afNotifyTestResult"></div>
+                    </div>
+                    <div id="afNotifyWebhook" hidden>
+                        <div class="fieldDescription" style="margin-top:0.8em">Without a webhook, the server checks Seerr every ten minutes. With one, notifications go out within seconds of a change.</div>
+                        <label class="inputLabel" for="afNotifyAddress" style="margin-top:0.8em;display:block">Address Seerr reaches this server on</label>
+                        <input type="url" class="afControl" id="afNotifyAddress" placeholder="http://jellyfin:8096" style="width:100%;max-width:32em" />
+                        <div class="fieldDescription">Change it only if Seerr reaches Jellyfin on another address, such as a local or Docker one. The Webhook URL below follows it.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised button-submit emby-button" id="afNotifyAddressSave"><span>Save Address</span></button>
+                        </div>
+                        <h4 style="margin:1.2em 0 0.2em">In Seerr › Settings › Notifications › Webhook</h4>
+                        <div class="fieldDescription">Tick <b>Enable Agent</b>, then fill in the fields with these.</div>
+                        <label class="inputLabel" for="afNotifyUrl" style="margin-top:0.8em;display:block">Webhook URL</label>
+                        <input type="text" class="afControl" id="afNotifyUrl" readonly style="width:100%;max-width:32em" />
+                        <label class="inputLabel" for="afNotifySecret" style="margin-top:0.8em;display:block">Authorization Header</label>
+                        <input type="text" class="afControl" id="afNotifySecret" readonly style="width:100%;max-width:32em" />
+                        <div class="fieldDescription">Leave Custom Headers empty. A new secret stops the webhook until it's pasted into Seerr again.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button afDanger" id="afNotifyReset"><span>New Secret</span></button>
+                        </div>
+                        <label class="inputLabel" for="afNotifyPayload" style="margin-top:0.8em;display:block">JSON Payload</label>
+                        <textarea class="afControl" id="afNotifyPayload" readonly rows="4" style="width:100%;max-width:32em;font-family:monospace;box-sizing:border-box"></textarea>
+                        <div class="fieldDescription">Replace Seerr's payload with this.</div>
+                        <label class="inputLabel" style="margin-top:0.8em;display:block">Notification Types</label>
+                        <div class="fieldDescription">Tick all of them. Arcfin tells the same people Seerr would: whoever asked or reported, and the people who manage requests or issues.</div>
+                        <div class="fieldDescription" style="margin-top:0.8em">Save in Seerr, then press <b>Test</b> there. This page shows when the test arrives.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button" id="afNotifyWait"><span>Wait for Seerr's Test</span></button>
+                        </div>
+                        <div class="fieldDescription" id="afNotifyLast" style="margin-top:0.4em"></div>
+                    </div>
+                </div>
+                <div class="afCard">
                     <h3 class="afCardTitle">Waiting to Send</h3>
                     <p class="fieldDescription">Requests made while Seerr couldn't be reached. The server tries again every few minutes for three days.</p>
                     <div id="afQueue"></div>

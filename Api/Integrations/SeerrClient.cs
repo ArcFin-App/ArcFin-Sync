@@ -25,6 +25,9 @@ public sealed class SeerrClient
 
     /// <summary>Jellyfin user ID ("N" form) to Seerr user ID, refreshed every ten minutes.</summary>
     private static readonly ConcurrentDictionary<string, int> Users = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Jellyfin user ID ("N" form) to that person's Seerr permission bits, loaded with <see cref="Users"/>.</summary>
+    private static readonly ConcurrentDictionary<string, int> Permissions = new(StringComparer.OrdinalIgnoreCase);
     private static DateTime _usersLoaded = DateTime.MinValue;
     private static readonly SemaphoreSlim UsersGate = new(1, 1);
 
@@ -45,6 +48,7 @@ public sealed class SeerrClient
     public static void ForgetUsers()
     {
         Users.Clear();
+        Permissions.Clear();
         _usersLoaded = DateTime.MinValue;
     }
 
@@ -131,6 +135,37 @@ public sealed class SeerrClient
         }
     }
 
+    /// <summary>
+    /// Every Seerr user linked to a Jellyfin account, with their Seerr permission bits, from the
+    /// same list <see cref="SeerrUserAsync"/> keeps (read again after ten minutes).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, int>> UserPermissionsAsync(CancellationToken token)
+    {
+        if (DateTime.UtcNow - _usersLoaded >= TimeSpan.FromMinutes(10) || Permissions.IsEmpty)
+        {
+            await UsersGate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                await LoadUsersAsync(token).ConfigureAwait(false);
+            }
+            finally
+            {
+                UsersGate.Release();
+            }
+        }
+
+        var result = new Dictionary<Guid, int>();
+        foreach (var (jf, bits) in Permissions)
+        {
+            if (Guid.TryParse(jf, out var id))
+            {
+                result[id] = bits;
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Checks the address and key: the key's own user must come back.</summary>
     public async Task<SeerrHealth> TestAsync(string url, string key, CancellationToken token)
     {
@@ -167,6 +202,7 @@ public sealed class SeerrClient
     {
         var skip = 0;
         var found = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var permissions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         while (skip < 10000)
         {
             using var response = await SendAsync(HttpMethod.Get, "user", $"?take=100&skip={skip}", null, null, token).ConfigureAwait(false);
@@ -187,7 +223,9 @@ public sealed class SeerrClient
                 if (user.TryGetProperty("jellyfinUserId", out var jf) && jf.ValueKind == JsonValueKind.String
                     && user.TryGetProperty("id", out var sid) && sid.TryGetInt32(out var seerrId))
                 {
-                    found[jf.GetString()!.Replace("-", string.Empty, StringComparison.Ordinal)] = seerrId;
+                    var key = jf.GetString()!.Replace("-", string.Empty, StringComparison.Ordinal);
+                    found[key] = seerrId;
+                    permissions[key] = user.TryGetProperty("permissions", out var bits) && bits.TryGetInt32(out var value) ? value : 0;
                 }
             }
 
@@ -203,6 +241,12 @@ public sealed class SeerrClient
         foreach (var (jf, sid) in found)
         {
             Users[jf] = sid;
+        }
+
+        Permissions.Clear();
+        foreach (var (jf, bits) in permissions)
+        {
+            Permissions[jf] = bits;
         }
 
         _usersLoaded = DateTime.UtcNow;

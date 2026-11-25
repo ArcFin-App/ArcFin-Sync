@@ -847,6 +847,98 @@ function renderRecs(view) {
     };
 }
 
+function renderNotifications(view) {
+    var box = view.querySelector("#afNotifyEnabled");
+    var saved = STATE.notifications || {};
+    box.checked = !!saved.Enabled;
+    view.querySelector("#afNotifyWebhook").hidden = !(saved.Enabled && saved.SeerrConfigured);
+    view.querySelector("#afNotifyTestWrap").hidden = !saved.Enabled;
+    var picker = view.querySelector("#afNotifyTestUser");
+    var picked = picker.value;
+    picker.textContent = "";
+    STATE.users.forEach(function (user) { picker.appendChild(el("option", { value: user.UserId, text: user.Name })); });
+    if (picked) { picker.value = picked; }
+    view.querySelector("#afNotifyTestSend").onclick = function () {
+        var result = view.querySelector("#afNotifyTestResult");
+        var name = picker.options[picker.selectedIndex] ? picker.options[picker.selectedIndex].text : "";
+        send("POST", "Admin/Notifications/Test", { UserId: picker.value }).then(function () {
+            result.textContent = "Sent to " + name + ". It shows on their devices at their next check.";
+        }, showError);
+    };
+    var address = view.querySelector("#afNotifyAddress");
+    var url = view.querySelector("#afNotifyUrl");
+    address.value = saved.WebhookAddress || ApiClient.serverAddress();
+    var showUrl = function () { url.value = address.value.trim().replace(/\/+$/, "") + (saved.WebhookPath || ""); };
+    showUrl();
+    address.oninput = showUrl;
+    view.querySelector("#afNotifyAddressSave").onclick = function () {
+        var typed = address.value.trim();
+        send("PUT", "Admin/Notifications", { Enabled: box.checked, WebhookAddress: typed === ApiClient.serverAddress() ? "" : typed }).then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+            Dashboard.processPluginConfigurationUpdateResult();
+        }, showError);
+    };
+    view.querySelector("#afNotifySecret").value = saved.WebhookSecret || "";
+    view.querySelector("#afNotifyPayload").value = saved.SeerrPayload || "";
+    showLastWebhook(view, saved.LastWebhook);
+    view.querySelector("#afNotifyWait").onclick = function () { waitForWebhook(view); };
+    box.onchange = function () {
+        send("PUT", "Admin/Notifications", { Enabled: box.checked }).then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+            Dashboard.processPluginConfigurationUpdateResult();
+        }, function (err) { box.checked = !box.checked; showError(err); });
+    };
+    view.querySelector("#afNotifyReset").onclick = function () {
+        if (!window.confirm("Make a new secret? Seerr's webhook stops working until you paste the new one into it.")) { return; }
+        sendForJson("POST", "Admin/Notifications/Secret/Reset").then(function (result) {
+            STATE.notifications = result;
+            renderNotifications(view);
+        }, showError);
+    };
+}
+
+var WEBHOOK_RESULTS = {
+    test: "Seerr's test arrived. The webhook works.",
+    ok: "A notification from Seerr arrived.",
+    unreadable: "Seerr's call arrived, but its JSON Payload isn't the one above. Paste it again.",
+    missingSecret: "Seerr called without an Authorization Header. Paste the secret above into it.",
+    wrongSecret: "Seerr called with the wrong Authorization Header. Paste the secret above again."
+};
+
+function showLastWebhook(view, last) {
+    var line = view.querySelector("#afNotifyLast");
+    if (!last) { line.textContent = "Nothing from Seerr's webhook yet."; return; }
+    var when = new Date(last.Time).toLocaleString();
+    line.textContent = (WEBHOOK_RESULTS[last.Result] || last.Result) + " (" + when + ")";
+}
+
+// Asks every few seconds for a minute, until a call newer than the one shown arrives.
+function waitForWebhook(view) {
+    var button = view.querySelector("#afNotifyWait");
+    var before = STATE.notifications && STATE.notifications.LastWebhook ? STATE.notifications.LastWebhook.Time : null;
+    var tries = 0;
+    button.disabled = true;
+    view.querySelector("#afNotifyLast").textContent = "Waiting for Seerr's test… Press Test in Seerr now.";
+    var timer = setInterval(function () {
+        tries++;
+        getJson("Admin/Notifications").then(function (result) {
+            var last = result.LastWebhook;
+            if (last && last.Time !== before) {
+                clearInterval(timer);
+                button.disabled = false;
+                STATE.notifications = result;
+                showLastWebhook(view, last);
+            } else if (tries >= 20) {
+                clearInterval(timer);
+                button.disabled = false;
+                view.querySelector("#afNotifyLast").textContent = "Nothing arrived in a minute. Check the Webhook URL is one Seerr can reach, and that Enable Agent is ticked.";
+            }
+        }, function () { if (tries >= 20) { clearInterval(timer); button.disabled = false; } });
+    }, 3000);
+}
+
 function renderHidden(view) {
     var box = view.querySelector("#afHiddenEnabled");
     box.checked = !!(STATE.hidden && STATE.hidden.Enabled);
@@ -1716,6 +1808,7 @@ function renderAll(view) {
     renderAccess(view, STATE.party, "#afPartyEnabled", "#afPartyUsers");
     renderRecs(view);
     renderHidden(view);
+    renderNotifications(view);
     renderIntegrations(view);
     renderSecurity(view);
     renderLimits(view);
@@ -1740,8 +1833,9 @@ function reload(view, keepTab) {
     return Promise.all([
         getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status"), getJson("Admin/PickTogether"),
         getJson("Admin/WatchParty"), getJson("Admin/Recommendations"), getJson("Admin/Integrations"), getJson("Admin/Security"), getJson("Admin/Limits"),
-        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden")
+        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden"), getJson("Admin/Notifications")
     ]).then(function (results) {
+        STATE.notifications = results[14];
         STATE.household = results[12];
         STATE.hidden = results[13];
         STATE.live = results[10];
