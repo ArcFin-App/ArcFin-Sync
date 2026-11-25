@@ -2,6 +2,8 @@
 
 Contributions are welcome. Arcfin Sync is maintained day to day by one person, so response times won't always be fast, but PRs and issues from anyone are genuinely wanted.
 
+Arcfin Sync's home is [git.psmattas.com/ArcFin/Arcfin-Sync](https://git.psmattas.com/ArcFin/Arcfin-Sync). The copy on GitHub is a read-only mirror: pull requests and issues opened there aren't seen, so please open them on git.psmattas.com. You can sign in there with your GitHub or GitLab account.
+
 ## License and the DCO
 
 Arcfin Sync is licensed under [AGPL-3.0-or-later](LICENSE). Every commit needs a **Developer Certificate of Origin (DCO)** sign-off, a `Signed-off-by:` trailer certifying you wrote the change or otherwise have the right to submit it under the project's license. Add it automatically with:
