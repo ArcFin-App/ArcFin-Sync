@@ -167,6 +167,15 @@
                     <h3 class="afCardTitle">Notifications</h3>
                     <p class="fieldDescription">Arcfin tells people when a Seerr request of theirs is approved, declined or available, about announcements, and a day before planned maintenance. It asks this server when it opens and when the system lets it run in the background, so notifications can arrive a while after the change.</p>
                     <label class="afInline"><input type="checkbox" id="afNotifyEnabled" /> <span>Notifications are on</span></label>
+                    <div id="afNotifyTestWrap" hidden>
+                        <label class="inputLabel" for="afNotifyTestUser" style="margin-top:0.8em;display:block">Send a test notification to</label>
+                        <select is="emby-select" class="afControl" id="afNotifyTestUser" style="width:100%;max-width:32em"></select>
+                        <div class="fieldDescription">Their Arcfin devices show it on their next check: when Arcfin opens, or when the system lets it run in the background. A device that has never checked before only starts counting from its first check.</div>
+                        <div class="afButtons">
+                            <button is="emby-button" type="button" class="raised emby-button" id="afNotifyTestSend"><span>Send Test Notification</span></button>
+                        </div>
+                        <div class="fieldDescription" id="afNotifyTestResult"></div>
+                    </div>
                     <div id="afNotifyWebhook" hidden>
                         <div class="fieldDescription" style="margin-top:0.8em">Without a webhook, the server checks Seerr every ten minutes. With one, notifications go out within seconds of a change.</div>
                         <label class="inputLabel" for="afNotifyAddress" style="margin-top:0.8em;display:block">Address Seerr reaches this server on</label>

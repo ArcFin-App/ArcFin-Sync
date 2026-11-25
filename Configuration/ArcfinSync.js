@@ -852,6 +852,19 @@ function renderNotifications(view) {
     var saved = STATE.notifications || {};
     box.checked = !!saved.Enabled;
     view.querySelector("#afNotifyWebhook").hidden = !(saved.Enabled && saved.SeerrConfigured);
+    view.querySelector("#afNotifyTestWrap").hidden = !saved.Enabled;
+    var picker = view.querySelector("#afNotifyTestUser");
+    var picked = picker.value;
+    picker.textContent = "";
+    STATE.users.forEach(function (user) { picker.appendChild(el("option", { value: user.UserId, text: user.Name })); });
+    if (picked) { picker.value = picked; }
+    view.querySelector("#afNotifyTestSend").onclick = function () {
+        var result = view.querySelector("#afNotifyTestResult");
+        var name = picker.options[picker.selectedIndex] ? picker.options[picker.selectedIndex].text : "";
+        send("POST", "Admin/Notifications/Test", { UserId: picker.value }).then(function () {
+            result.textContent = "Sent to " + name + ". It shows on their devices at their next check.";
+        }, showError);
+    };
     var address = view.querySelector("#afNotifyAddress");
     var url = view.querySelector("#afNotifyUrl");
     address.value = saved.WebhookAddress || ApiClient.serverAddress();

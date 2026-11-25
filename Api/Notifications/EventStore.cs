@@ -89,7 +89,7 @@ public sealed class ServerEvent
     /// </summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>seerr-approved, seerr-declined, seerr-available, announcement or maintenance.</summary>
+    /// <summary>seerr-approved, seerr-declined, seerr-available, announcement, maintenance or test.</summary>
     public string Kind { get; set; } = string.Empty;
 
     /// <summary>Null for everyone.</summary>

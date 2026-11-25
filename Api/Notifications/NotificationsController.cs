@@ -190,6 +190,27 @@ public class NotificationsAdminController : ControllerBase
         return NotificationsAdminDto.Current();
     }
 
+    /// <summary>
+    /// A test notification for one person, which their Arcfin devices show on their next check:
+    /// when Arcfin opens, or when the system lets it run in the background.
+    /// </summary>
+    [HttpPost("Test")]
+    public ActionResult<NotificationsAdminDto> SendTest([FromBody] NotificationTestBody body, [FromServices] IUserManager users)
+    {
+        if (!Plugin.Instance!.Configuration.Notifications.Enabled)
+        {
+            return BadRequest("Turn notifications on first.");
+        }
+
+        if (body?.UserId is not { } id || users.GetUserById(id) is null)
+        {
+            return BadRequest("Pick someone to send it to.");
+        }
+
+        EventStore.Current.Add(new[] { new ServerEvent { Id = $"test.{Guid.NewGuid():N}", Kind = "test", UserId = id } }, DateTime.UtcNow);
+        return NotificationsAdminDto.Current();
+    }
+
     /// <summary>A new webhook secret; Seerr's webhook settings need the new one pasted in.</summary>
     [HttpPost("Secret/Reset")]
     public ActionResult<NotificationsAdminDto> ResetSecret()
@@ -226,6 +247,11 @@ public sealed class EventDto
     {
         Id = e.Id, Kind = e.Kind, Title = e.Title, Body = e.Body, RequestId = e.RequestId, Starts = e.Starts, Ends = e.Ends
     };
+}
+
+public sealed class NotificationTestBody
+{
+    public Guid? UserId { get; set; }
 }
 
 public sealed class NotificationsAdminBody
