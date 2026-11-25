@@ -1980,6 +1980,32 @@
       ]
     },
     {
+      "key": "notifyIssues",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Issues",
+      "detail": "Seerr issues: comments and changes on your own, and new ones for issue managers. Needs Arcfin Sync 0.7.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
+      "key": "notifyRequestsToApprove",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Requests to Approve",
+      "detail": "For Seerr request managers: requests waiting, approved automatically, or failed. Needs Arcfin Sync 0.7.",
+      "default": "true",
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    {
       "key": "notifyDownload",
       "type": "bool",
       "scope": "synced",
