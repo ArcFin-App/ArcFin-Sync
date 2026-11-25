@@ -15,5 +15,6 @@ public class ServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddHostedService<SeerrQueueService>();
         serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Security.SecurityService>();
         serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Household.SharedWatchService>();
+        serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Notifications.SeerrWatchService>();
     }
 }
