@@ -1,6 +1,6 @@
 # Arcfin Sync
 
-![Version](https://img.shields.io/badge/version-0.6.0-blue)
+[![Version](https://arcfin.psmattas.com/badges/plugin.svg)](https://git.psmattas.com/ArcFin/Arcfin-Sync/releases)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
 A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). Installs on your Jellyfin server, keeps each user's Arcfin settings in step across their devices, and lets the server's administrators set defaults and locks for those settings.
