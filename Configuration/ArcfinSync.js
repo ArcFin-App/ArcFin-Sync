@@ -854,6 +854,7 @@ function renderNotifications(view) {
     view.querySelector("#afNotifyWebhook").hidden = !(saved.Enabled && saved.SeerrConfigured);
     view.querySelector("#afNotifyUrl").value = ApiClient.serverAddress() + (saved.WebhookPath || "");
     view.querySelector("#afNotifySecret").value = saved.WebhookSecret || "";
+    view.querySelector("#afNotifyPayload").value = saved.SeerrPayload || "";
     box.onchange = function () {
         send("PUT", "Admin/Notifications", { Enabled: box.checked }).then(function (result) {
             STATE.notifications = result;

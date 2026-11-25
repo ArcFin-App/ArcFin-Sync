@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,12 +17,16 @@ namespace Jellyfin.Plugin.ArcfinSync.Api.Notifications;
 /// <summary>
 /// Looks at Seerr's newest requests every ten minutes, or straight away when Seerr's webhook
 /// says something changed, and records approved, declined and available ones as events for the
-/// person who asked. The webhook only wakes this up: what changed always comes from Seerr itself.
+/// person who asked. A webhook names the request and what Seerr says happened; the check then
+/// reads that request from Seerr itself, so a webhook alone never makes an event.
 /// </summary>
 public sealed class SeerrWatchService : BackgroundService
 {
     private static readonly TimeSpan Every = TimeSpan.FromMinutes(10);
     private static readonly SemaphoreSlim WakeSignal = new(0, 1);
+
+    /// <summary>Requests named by webhooks since the last check, with what Seerr said happened.</summary>
+    private static readonly ConcurrentDictionary<int, string?> Named = new();
     private readonly IHttpClientFactory _http;
     private readonly ILogger<SeerrWatchService> _logger;
 
@@ -32,8 +37,13 @@ public sealed class SeerrWatchService : BackgroundService
     }
 
     /// <summary>Checks soon; several calls before the check runs make one check.</summary>
-    public static void Wake()
+    public static void Wake(int? requestId = null, string? kind = null)
     {
+        if (requestId is { } id)
+        {
+            Named[id] = kind;
+        }
+
         try
         {
             WakeSignal.Release();
@@ -83,8 +93,23 @@ public sealed class SeerrWatchService : BackgroundService
         }
 
         var requests = SeerrRequests.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+        var named = Named.Keys.ToList().Select(id => (Id: id, Removed: Named.TryRemove(id, out var kind), Kind: kind)).ToList();
+        foreach (var (id, _, _) in named.Where(n => requests.All(r => r.Id != n.Id)))
+        {
+            // Older than Seerr's newest hundred: read it on its own.
+            using var one = await client.SendAsync(HttpMethod.Get, $"request/{id}", null, null, null, token).ConfigureAwait(false);
+            if (one.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(await one.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+                if (SeerrRequests.ParseOne(doc.RootElement) is { } request)
+                {
+                    requests.Add(request);
+                }
+            }
+        }
+
         var states = new SeerrStateFile(Plugin.Instance.DataFolderPath);
-        var changes = states.Update(requests);
+        var changes = states.Update(requests, named.Where(n => n.Kind is not null).ToDictionary(n => n.Id, n => n.Kind!));
         if (changes.Count == 0)
         {
             return;
@@ -149,21 +174,47 @@ public static class SeerrRequests
 
         foreach (var r in results.EnumerateArray())
         {
-            if (!r.TryGetProperty("id", out var id) || !id.TryGetInt32(out var requestId))
+            if (ParseOne(r) is { } request)
             {
-                continue;
+                list.Add(request);
             }
-
-            var media = r.TryGetProperty("media", out var m) && m.ValueKind == JsonValueKind.Object ? m : default;
-            Guid? user = r.TryGetProperty("requestedBy", out var by) && by.ValueKind == JsonValueKind.Object
-                         && by.TryGetProperty("jellyfinUserId", out var jf) && jf.ValueKind == JsonValueKind.String
-                         && Guid.TryParse(jf.GetString(), out var parsed) ? parsed : null;
-            list.Add(new SeerrRequest(requestId, Int(r, "status") ?? 0, Int(media, "status") ?? 0, Int(media, "tmdbId"),
-                                      media.ValueKind == JsonValueKind.Object && media.TryGetProperty("mediaType", out var type) ? type.GetString() : null, user));
         }
 
         return list;
     }
+
+    public static SeerrRequest? ParseOne(JsonElement r)
+    {
+        if (r.ValueKind != JsonValueKind.Object || !r.TryGetProperty("id", out var id) || !id.TryGetInt32(out var requestId))
+        {
+            return null;
+        }
+
+        var media = r.TryGetProperty("media", out var m) && m.ValueKind == JsonValueKind.Object ? m : default;
+        Guid? user = r.TryGetProperty("requestedBy", out var by) && by.ValueKind == JsonValueKind.Object
+                     && by.TryGetProperty("jellyfinUserId", out var jf) && jf.ValueKind == JsonValueKind.String
+                     && Guid.TryParse(jf.GetString(), out var parsed) ? parsed : null;
+        return new SeerrRequest(requestId, Int(r, "status") ?? 0, Int(media, "status") ?? 0, Int(media, "tmdbId"),
+                                media.ValueKind == JsonValueKind.Object && media.TryGetProperty("mediaType", out var type) ? type.GetString() : null, user);
+    }
+
+    /// <summary>Seerr's webhook notification_type, as the change it names; null for any other.</summary>
+    public static string? KindOf(string? notificationType) => notificationType switch
+    {
+        "MEDIA_APPROVED" => "approved",
+        "MEDIA_DECLINED" => "declined",
+        "MEDIA_AVAILABLE" => "available",
+        _ => null
+    };
+
+    /// <summary>Whether the request as Seerr has it now agrees with what a webhook said happened.</summary>
+    public static bool Agrees(string kind, SeerrRequest now) => kind switch
+    {
+        "approved" => now.Status == 2,
+        "declined" => now.Status == 3,
+        "available" => now.MediaStatus == 5,
+        _ => false
+    };
 
     private static int? Int(JsonElement element, string name)
         => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : null;
@@ -210,7 +261,11 @@ public sealed class SeerrStateFile
         _path = Path.Combine(folder, "seerr-states.json");
     }
 
-    public List<(SeerrRequest Request, string Kind)> Update(IReadOnlyList<SeerrRequest> requests)
+    /// <param name="named">
+    /// What webhooks said happened, by request. For a request not seen before, that's the change,
+    /// when Seerr's own copy agrees; for one seen before, the states decide as usual.
+    /// </param>
+    public List<(SeerrRequest Request, string Kind)> Update(IReadOnlyList<SeerrRequest> requests, IReadOnlyDictionary<int, string>? named = null)
     {
         lock (Gate)
         {
@@ -221,7 +276,10 @@ public sealed class SeerrStateFile
             {
                 var key = request.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 states.TryGetValue(key, out var before);
-                if (saved is not null && request.JellyfinUserId is not null && SeerrRequests.Change(before, request) is { } kind)
+                var kind = before is null && named?.GetValueOrDefault(request.Id) is { } hinted && SeerrRequests.Agrees(hinted, request)
+                    ? hinted
+                    : saved is not null ? SeerrRequests.Change(before, request) : null;
+                if (request.JellyfinUserId is not null && kind is not null)
                 {
                     changes.Add((request, kind));
                 }

@@ -86,6 +86,29 @@ public class SeerrWatchTests
     }
 
     [Fact]
+    public void AWebhookAnnouncesARequestSeenForTheFirstTimeOnlyWhenSeerrAgrees()
+    {
+        using var dir = new TempFolder();
+        var file = new SeerrStateFile(dir.Path);
+        var user = Guid.NewGuid();
+        var named = new Dictionary<int, string> { [1] = "approved", [2] = "available" };
+        var changes = file.Update(new[] { new SeerrRequest(1, 2, 3, 10, "movie", user), new SeerrRequest(2, 2, 3, 11, "movie", user) }, named);
+        Assert.Equal(new[] { (1, "approved") }, changes.Select(c => (c.Request.Id, c.Kind)));
+    }
+
+    [Theory]
+    [InlineData("MEDIA_APPROVED", "approved")]
+    [InlineData("MEDIA_DECLINED", "declined")]
+    [InlineData("MEDIA_AVAILABLE", "available")]
+    [InlineData("MEDIA_PENDING", null)]
+    [InlineData("TEST_NOTIFICATION", null)]
+    [InlineData(null, null)]
+    public void WebhookTypesMapToChanges(string? type, string? kind)
+    {
+        Assert.Equal(kind, SeerrRequests.KindOf(type));
+    }
+
+    [Fact]
     public void RequestsWithoutAJellyfinAccountAreNotAnnounced()
     {
         using var dir = new TempFolder();
@@ -106,6 +129,25 @@ public class NotificationFeedTests
         Assert.True(NotificationsController.Matches($" {secret} ", secret));
         Assert.False(NotificationsController.Matches(secret[..^1], secret));
         Assert.False(NotificationsController.Matches(string.Empty, secret));
+    }
+
+    [Theory]
+    [InlineData("{\"notification_type\":\"MEDIA_APPROVED\",\"request_id\":\"42\"}", "MEDIA_APPROVED", 42)]
+    [InlineData("{\"notification_type\":\"MEDIA_AVAILABLE\",\"request_id\":7}", "MEDIA_AVAILABLE", 7)]
+    [InlineData("{\"notification_type\":\"TEST_NOTIFICATION\",\"request_id\":\"\"}", "TEST_NOTIFICATION", null)]
+    [InlineData("not json", null, null)]
+    [InlineData("[]", null, null)]
+    public void ReadsSeerrsPayload(string body, string? type, int? requestId)
+    {
+        Assert.Equal((type, requestId), NotificationsController.ReadPayload(body));
+    }
+
+    [Fact]
+    public void TheSuggestedPayloadIsValidJsonWithBothFields()
+    {
+        var filled = NotificationsController.SeerrPayload.Replace("{{notification_type}}", "MEDIA_DECLINED", StringComparison.Ordinal)
+            .Replace("{{request_id}}", "5", StringComparison.Ordinal);
+        Assert.Equal(("MEDIA_DECLINED", 5), NotificationsController.ReadPayload(filled));
     }
 
     [Fact]

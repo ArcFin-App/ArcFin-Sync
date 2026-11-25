@@ -83,11 +83,14 @@ public class NotificationsController : ControllerBase
 
     /// <summary>
     /// For Seerr's webhook agent, whose Authorization header carries the secret shown on the
-    /// dashboard. The body isn't read: a call only makes the server check Seerr now.
+    /// dashboard. Its JSON payload names the request and what happened (<see cref="SeerrPayload"/>);
+    /// the server then reads that request from Seerr before anything is recorded. Seerr's Test
+    /// button gets a plain success.
     /// </summary>
     [HttpPost("Seerr")]
     [AllowAnonymous]
-    public ActionResult SeerrWebhook()
+    [RequestSizeLimit(65536)]
+    public async Task<ActionResult> SeerrWebhook()
     {
         if (!Config.Notifications.Enabled)
         {
@@ -100,8 +103,42 @@ public class NotificationsController : ControllerBase
             return Unauthorized();
         }
 
-        SeerrWatchService.Wake();
+        using var reader = new System.IO.StreamReader(Request.Body);
+        var (type, requestId) = ReadPayload(await reader.ReadToEndAsync(HttpContext.RequestAborted).ConfigureAwait(false));
+        if (type != "TEST_NOTIFICATION")
+        {
+            SeerrWatchService.Wake(requestId, SeerrRequests.KindOf(type));
+        }
+
         return NoContent();
+    }
+
+    /// <summary>The payload to paste into Seerr's JSON Payload field.</summary>
+    public const string SeerrPayload = "{\n  \"notification_type\": \"{{notification_type}}\",\n  \"request_id\": \"{{request_id}}\"\n}";
+
+    /// <summary>notification_type and request_id from a webhook; anything unreadable is null.</summary>
+    public static (string? Type, int? RequestId) ReadPayload(string body)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object)
+            {
+                return (null, null);
+            }
+
+            var type = root.TryGetProperty("notification_type", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String ? t.GetString() : null;
+            int? id = root.TryGetProperty("request_id", out var r)
+                ? r.ValueKind == System.Text.Json.JsonValueKind.Number && r.TryGetInt32(out var n) ? n
+                  : r.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(r.GetString(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : null
+                : null;
+            return (type, id);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return (null, null);
+        }
     }
 
     public static bool Matches(string given, string secret)
@@ -187,6 +224,9 @@ public sealed class NotificationsAdminDto
     public string? WebhookSecret { get; set; }
 
     public bool SeerrConfigured { get; set; }
+
+    /// <summary>For Seerr's JSON Payload field.</summary>
+    public string SeerrPayload { get; set; } = NotificationsController.SeerrPayload;
 
     public static NotificationsAdminDto Current() => new()
     {
