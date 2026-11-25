@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 namespace Jellyfin.Plugin.ArcfinSync.Api.Integrations;
 
 /// <summary>
-/// The Seerr calls the server makes for the apps, and nothing else: browsing, details, requests
-/// and the watchlist. Settings, user management and sign-in are never passed through. Seerr
+/// The Seerr calls the server makes for the apps, and nothing else: browsing, details, requests,
+/// the watchlist and issues. Settings, user management and sign-in are never passed through. Seerr
 /// still checks each call against the person's own Seerr permissions, since every call is made
 /// as them.
 /// </summary>
@@ -29,6 +29,8 @@ public static class SeerrRoutes
         Rx(@"user/\d+/(quota|watchlist|requests)"),
         Rx(@"request(/count)?"),
         Rx(@"request/\d+"),
+        Rx(@"issue"),
+        Rx(@"issue/\d+"),
     };
 
     private static readonly Regex[] Creates =
@@ -36,12 +38,16 @@ public static class SeerrRoutes
         Rx(@"request"),
         Rx(@"request/\d+/(approve|decline|retry)"),
         Rx(@"watchlist"),
+        Rx(@"issue"),
+        Rx(@"issue/\d+/comment"),
+        Rx(@"issue/\d+/(open|resolved)"),
     };
 
     private static readonly Regex[] Removes =
     {
         Rx(@"request/\d+"),
         Rx(@"watchlist/\d+"),
+        Rx(@"issue/\d+"),
     };
 
     /// <summary>Whether <paramref name="path"/> (after "api/v1/") may be sent with <paramref name="method"/>.</summary>

@@ -345,6 +345,13 @@ public class SeerrRouteTests
     [InlineData("DELETE", "request/12")]
     [InlineData("POST", "watchlist")]
     [InlineData("DELETE", "watchlist/603")]
+    [InlineData("GET", "issue")]
+    [InlineData("GET", "issue/4")]
+    [InlineData("POST", "issue")]
+    [InlineData("POST", "issue/4/comment")]
+    [InlineData("POST", "issue/4/resolved")]
+    [InlineData("POST", "issue/4/open")]
+    [InlineData("DELETE", "issue/4")]
     public void AppCallsArePassedOn(string method, string path) => Assert.True(SeerrRoutes.IsAllowed(method, path));
 
     [Theory]
@@ -360,6 +367,9 @@ public class SeerrRouteTests
     [InlineData("GET", "movie/603%2F..")]
     [InlineData("GET", "")]
     [InlineData("POST", "movie/603")]
+    [InlineData("POST", "issue/4/delete")]
+    [InlineData("PUT", "issueComment/9")]
+    [InlineData("DELETE", "issue")]
     public void EverythingElseIsNot(string method, string path) => Assert.False(SeerrRoutes.IsAllowed(method, path));
 
     [Fact]
