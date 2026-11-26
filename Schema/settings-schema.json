@@ -1396,12 +1396,84 @@
       ]
     },
     {
-      "key": "musicVisualizerTint",
-      "type": "bool",
+      "key": "musicVisualizerStyle",
+      "type": "string",
       "scope": "synced",
       "group": "music",
-      "title": "Colour from Cover",
-      "default": "true",
+      "title": "Visualizer Style",
+      "default": "bars",
+      "options": [
+        {
+          "value": "bars",
+          "title": "Bars"
+        },
+        {
+          "value": "wave",
+          "title": "Wave"
+        },
+        {
+          "value": "mirror",
+          "title": "Mirrored"
+        },
+        {
+          "value": "dots",
+          "title": "Dots"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicVisualizerPlacement",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Visualizer Placement",
+      "default": "cover",
+      "options": [
+        {
+          "value": "cover",
+          "title": "On the Cover"
+        },
+        {
+          "value": "bottom",
+          "title": "Bottom of the Player"
+        }
+      ],
+      "platforms": [
+        "iOS",
+        "macOS",
+        "tvOS"
+      ]
+    },
+    {
+      "key": "musicVisualizerColor",
+      "type": "string",
+      "scope": "synced",
+      "group": "music",
+      "title": "Visualizer Colour",
+      "default": "cover",
+      "options": [
+        {
+          "value": "cover",
+          "title": "From the Cover"
+        },
+        {
+          "value": "palette",
+          "title": "Cover Colours"
+        },
+        {
+          "value": "spectrum",
+          "title": "Spectrum"
+        },
+        {
+          "value": "white",
+          "title": "White Glass"
+        }
+      ],
       "platforms": [
         "iOS",
         "macOS",
