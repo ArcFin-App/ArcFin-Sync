@@ -29,7 +29,7 @@ A Jellyfin server plugin for [Arcfin](https://git.psmattas.com/ArcFin/ArcFin). I
 
 ## Status
 
-v0.7.0, for Arcfin 0.5.0 (build 4 or later for notifications and issues; build 3 or later for the other 0.6 features). Install it from the repository manifest below.
+v0.7.1, for Arcfin 0.5.0 (build 5 or later for the visualizer settings; build 4 or later for notifications and issues; build 3 or later for the other 0.6 features). Install it from the repository manifest below.
 
 ## Requirements
 
