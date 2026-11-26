@@ -1,6 +1,6 @@
 name: "Arcfin Sync"
 guid: "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d"
-version: "0.7.0.0"
+version: "0.7.1.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "psmattas"
@@ -10,4 +10,4 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArcfinSync.dll"
 changelog: |
-  - Notifications: Arcfin tells people when their Seerr request is approved, declined or available, request managers about requests waiting for approval, approved automatically or failed, and reporters and issue managers about Seerr issues reported, commented on, resolved or reopened, plus announcements and planned maintenance. The server watches Seerr, within seconds with Seerr's webhook (its setup, a test check and the address to use are on the dashboard) and otherwise every ten minutes. Open Arcfin apps are told at once; others find the news when they next check. A test notification can be sent to one person. Seerr's issue calls now pass through the server. Off until an administrator turns it on.
+  - Settings catalogue: Arcfin's music visualizer settings, Visualizer Style (Bars, Wave, Mirrored or Dots), Visualizer Placement (On the Cover or Bottom of the Player) and Visualizer Colour (From the Cover, Cover Colours, Spectrum or White Glass), which administrators can set defaults for and lock. They replace Colour from Cover.
