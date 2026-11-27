@@ -13,7 +13,7 @@
         "changelog": "Arcs: short scenes from the server's films and episodes, picked for each person and played in a vertical feed in Arcfin on iPhone and iPad. Clips start at chapters, at cold opens, or at scene changes the Arcs scene index finds, skipping intros and credits, and are spoiler-safe by default. Recommendations learn from watch history, likes, watch time and favourites. Dialogue search, moods and reactions, best scenes for a title, friend codes for sending scenes to each other, request trailers through Seerr (which people or the administrator can turn off), personal stats and a clip of the day. Clips stream as HLS, made with Jellyfin's ffmpeg on the NVIDIA GPU (with HDR tone mapping) when Jellyfin uses NVENC, and on the CPU otherwise. The scene index decodes keyframes only, on the GPU too, with a setting for how many titles it scans at once. Off until an administrator turns it on, on the new Arcs tab.",
         "targetAbi": "12.1.0.0",
         "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.8.0/arcfin-sync-0.8.0.0.zip",
-        "checksum": "819fd46a770d5db21ebb35a0ea754239",
+        "checksum": "d48f5d895b407304a3bbbc2797f8a8f7",
         "timestamp": "2026-11-27T23:07:34Z"
       },
       {

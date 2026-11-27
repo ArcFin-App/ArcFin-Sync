@@ -137,6 +137,8 @@ public static class SceneIndex
                 return null;
             }
 
+            ClipRenderer.Background(process);
+
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromMinutes(10));
             var errors = process.StandardError.ReadToEndAsync(CancellationToken.None);
@@ -259,9 +261,12 @@ public sealed class ArcsSceneIndexTask : IScheduledTask
         var gpu = ArcsService.GpuFrom(_config.GetEncodingOptions(), _mediaEncoder.SupportsEncoder("h264_nvenc")) is not null;
         var parallel = ArcsSettingsRules.ClampSceneScans(settings.SceneScans);
         _logger.LogInformation("Arcfin Sync Arcs: scanning {Count} titles for scenes, {Parallel} at a time, on the {Where}", toScan.Count, parallel, gpu ? "GPU" : "CPU");
+        // Titles already scanned count as done, so a run that picks up where one stopped shows it.
+        var alreadyDone = kept.Count;
+        var total = alreadyDone + toScan.Count;
         var done = 0;
         var saveGate = new object();
-        progress.Report(0);
+        progress.Report(100.0 * alreadyDone / Math.Max(1, total));
         await Parallel.ForEachAsync(toScan, new ParallelOptions { MaxDegreeOfParallelism = parallel, CancellationToken = cancellationToken }, async (next, token) =>
         {
             var scenes = await SceneIndex.ScanAsync(_mediaEncoder.EncoderPath, next.Item.Path, gpu, _logger, token).ConfigureAwait(false);
@@ -272,7 +277,7 @@ public sealed class ArcsSceneIndexTask : IScheduledTask
             }
 
             var count = Interlocked.Increment(ref done);
-            progress.Report(100.0 * count / toScan.Count);
+            progress.Report(100.0 * (alreadyDone + count) / Math.Max(1, total));
             if (count % 25 == 0)
             {
                 lock (saveGate)

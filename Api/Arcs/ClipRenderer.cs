@@ -180,6 +180,21 @@ public static partial class ClipRenderer
         return true;
     }
 
+    /// <summary>
+    /// Index work (scene scans, reading subtitles) at the lowest CPU priority, so playback, clips
+    /// people are waiting for and the server's own requests come first.
+    /// </summary>
+    internal static void Background(Process process)
+    {
+        try
+        {
+            process.PriorityClass = ProcessPriorityClass.Idle;
+        }
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception or PlatformNotSupportedException)
+        {
+        }
+    }
+
     internal static void ApplyCudaCache(ProcessStartInfo start)
     {
         if (CudaCachePath is not { Length: > 0 } path)
