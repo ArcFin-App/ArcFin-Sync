@@ -87,11 +87,11 @@ public class PickSessionTests
         s.Join("a", Guid.NewGuid(), "A", All(pool), Now);
         var first = s.Deck.ToHashSet();
         s.Restart(Now);
-        Assert.Empty(s.Deck.Where(first.Contains));
+        Assert.DoesNotContain(s.Deck, first.Contains);
         var second = s.Deck.ToHashSet();
         s.Restart(Now);
         Assert.Equal(5, s.Deck.Count);
-        Assert.Empty(s.Deck.Where(id => first.Contains(id) || second.Contains(id)));
+        Assert.DoesNotContain(s.Deck, id => first.Contains(id) || second.Contains(id));
         s.Restart(Now);
         Assert.Empty(s.Deck);
     }

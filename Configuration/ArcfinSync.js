@@ -1798,6 +1798,180 @@ function renderHousehold(view) {
     renderMaintenance(view);
 }
 
+// ----- Arcs -----
+
+var ARCS_WEIGHTS = [
+    ["History", "What they've watched"], ["Likes", "Likes and dislikes"], ["WatchTime", "Watching clips through"],
+    ["WatchFromHere", "Watching on from a clip"], ["Shares", "Shares"], ["Favorites", "Favourites"],
+    ["Similar", "Similar titles"], ["Popular", "Popular on this server"], ["Fresh", "New to the library"], ["Exploration", "Exploration (0 to 0.5)"]
+];
+
+function renderArcs(view) {
+    var a = STATE.arcs;
+    if (!a) { return; }
+    renderAccess(view, a, "#afArcsEnabled", "#afArcsUsers");
+    view.querySelector("#afArcsMin").value = a.MinSeconds;
+    view.querySelector("#afArcsMax").value = a.MaxSeconds;
+    view.querySelector("#afArcsDefault").value = a.DefaultSeconds;
+    view.querySelector("#afArcsSpoilers").value = a.Spoilers;
+    view.querySelector("#afArcsSharing").value = a.Sharing;
+    view.querySelector("#afArcsWatermark").value = a.Watermark;
+    view.querySelector("#afArcsDaily").checked = !!a.ClipOfTheDay;
+    view.querySelector("#afArcsScenes").checked = !!a.UseSceneDetection;
+    view.querySelector("#afArcsSceneScans").value = a.SceneScans || 1;
+    view.querySelector("#afArcsRequests").checked = a.RequestsInFeed !== false;
+    view.querySelector("#afArcsYouTube").checked = a.YouTubeTrailers !== false;
+    view.querySelector("#afArcsSending").value = a.Sending || "Everyone";
+    view.querySelector("#afArcsDialogue").checked = a.DialogueSearch !== false;
+    view.querySelector("#afArcsCache").value = a.CacheMb;
+    view.querySelector("#afArcsPrewarm").value = a.Prewarm;
+    var weights = view.querySelector("#afArcsWeights");
+    weights.textContent = "";
+    ARCS_WEIGHTS.forEach(function (w) {
+        var input = el("input", { type: "number", className: "afControl", min: "0", max: w[0] === "Exploration" ? "0.5" : "5", step: w[0] === "Exploration" ? "0.05" : "0.1", inputmode: "decimal" });
+        input.value = (a.Weights || {})[w[0]];
+        input.dataset.weight = w[0];
+        weights.appendChild(el("label", { className: "afLimitField" }, [el("span", { className: "afRowMeta", text: w[1] }), input]));
+    });
+    STATE.arcsBanned = (a.BannedItems || []).slice();
+    renderArcsBanned(view);
+    loadArcsLibraries(view);
+}
+
+function loadArcsLibraries(view) {
+    var box = view.querySelector("#afArcsLibraries");
+    ApiClient.getJSON(ApiClient.getUrl("Library/VirtualFolders")).then(function (folders) {
+        box.textContent = "";
+        var chosen = (STATE.arcs && STATE.arcs.Libraries) || [];
+        var list = el("div", { className: "afChecks" });
+        (folders || []).filter(function (f) { return !f.CollectionType || f.CollectionType === "movies" || f.CollectionType === "tvshows" || f.CollectionType === "mixed"; })
+            .forEach(function (f) {
+                var b = el("input", { type: "checkbox" });
+                b.checked = chosen.some(function (id) { return sameId(id, f.ItemId); });
+                b.dataset.libraryId = f.ItemId;
+                list.appendChild(el("label", { className: "afInline" }, [b, el("span", { text: f.Name })]));
+            });
+        box.appendChild(list);
+    }, function () { box.textContent = "Couldn't load the libraries."; });
+}
+
+function renderArcsBanned(view) {
+    var box = view.querySelector("#afArcsBanned");
+    box.textContent = "";
+    var ids = STATE.arcsBanned || [];
+    if (!ids.length) {
+        box.appendChild(el("div", { className: "afRowMeta", text: "None." }));
+        return;
+    }
+    var rows = {};
+    ids.forEach(function (id) {
+        var name = el("span", { text: id });
+        rows[String(id).replace(/-/g, "").toLowerCase()] = name;
+        box.appendChild(el("div", { className: "afDeviceHead", style: "margin:0.3em 0" }, [
+            name,
+            el("button", { type: "button", className: "afSmallButton", text: "Allow Again", onclick: function () {
+                STATE.arcsBanned = STATE.arcsBanned.filter(function (x) { return !sameId(x, id); });
+                renderArcsBanned(view);
+            } })
+        ]));
+    });
+    ApiClient.getItems(ApiClient.getCurrentUserId(), { Ids: ids.join(","), Fields: "ProductionYear" }).then(function (r) {
+        (r.Items || []).forEach(function (item) {
+            var node = rows[String(item.Id).replace(/-/g, "").toLowerCase()];
+            if (node) { node.textContent = item.Name + (item.ProductionYear ? " (" + item.ProductionYear + ")" : ""); }
+        });
+    }, function () { /* ids stay shown */ });
+}
+
+function searchArcsBan(view) {
+    var term = view.querySelector("#afArcsBanSearch").value.trim();
+    var box = view.querySelector("#afArcsBanResults");
+    box.textContent = "";
+    if (term.length < 2) { return; }
+    ApiClient.getItems(ApiClient.getCurrentUserId(), { SearchTerm: term, IncludeItemTypes: "Movie,Series", Recursive: true, Limit: 8, Fields: "ProductionYear" }).then(function (r) {
+        if (view.querySelector("#afArcsBanSearch").value.trim() !== term) { return; }
+        box.textContent = "";
+        (r.Items || []).forEach(function (item) {
+            var banned = (STATE.arcsBanned || []).some(function (x) { return sameId(x, item.Id); });
+            box.appendChild(el("div", { className: "afDeviceHead", style: "margin:0.3em 0" }, [
+                el("span", { text: item.Name + (item.ProductionYear ? " (" + item.ProductionYear + ")" : "") }),
+                el("button", { type: "button", className: "afSmallButton", text: banned ? "Never Used" : "Never Use", disabled: banned, onclick: function () {
+                    STATE.arcsBanned.push(item.Id);
+                    renderArcsBanned(view);
+                    searchArcsBan(view);
+                } })
+            ]));
+        });
+    }, showError);
+}
+
+function saveArcs(view) {
+    var number = function (id) { return Number(view.querySelector(id).value); };
+    var disabled = [];
+    view.querySelectorAll("#afArcsUsers input").forEach(function (b) { if (b.checked) { disabled.push(b.dataset.userId); } });
+    var boxes = view.querySelectorAll("#afArcsLibraries input");
+    // Until the list has loaded, keep the libraries already chosen.
+    var libraries = boxes.length ? [] : ((STATE.arcs && STATE.arcs.Libraries) || []).slice();
+    boxes.forEach(function (b) { if (b.checked) { libraries.push(b.dataset.libraryId); } });
+    var weights = {};
+    view.querySelectorAll("#afArcsWeights input").forEach(function (i) { weights[i.dataset.weight] = Number(i.value); });
+    var body = {
+        Enabled: view.querySelector("#afArcsEnabled").checked,
+        DisabledUsers: disabled,
+        Libraries: libraries,
+        MinSeconds: number("#afArcsMin"),
+        MaxSeconds: number("#afArcsMax"),
+        DefaultSeconds: number("#afArcsDefault"),
+        Spoilers: view.querySelector("#afArcsSpoilers").value,
+        Sharing: view.querySelector("#afArcsSharing").value,
+        Watermark: view.querySelector("#afArcsWatermark").value,
+        ClipOfTheDay: view.querySelector("#afArcsDaily").checked,
+        BannedItems: STATE.arcsBanned || [],
+        CacheMb: number("#afArcsCache"),
+        Prewarm: number("#afArcsPrewarm"),
+        UseSceneDetection: view.querySelector("#afArcsScenes").checked,
+        SceneScans: number("#afArcsSceneScans"),
+        RequestsInFeed: view.querySelector("#afArcsRequests").checked,
+        YouTubeTrailers: view.querySelector("#afArcsYouTube").checked,
+        Sending: view.querySelector("#afArcsSending").value,
+        DialogueSearch: view.querySelector("#afArcsDialogue").checked,
+        Weights: weights
+    };
+    Dashboard.showLoadingMsg();
+    send("PUT", "Admin/Arcs", body).then(function (saved) {
+        STATE.arcs = saved;
+        renderArcs(view);
+        Dashboard.hideLoadingMsg();
+        Dashboard.processPluginConfigurationUpdateResult();
+    }, showError);
+}
+
+function loadArcsStats(view) {
+    var stats = view.querySelector("#afArcsStats");
+    var top = view.querySelector("#afArcsTop");
+    getJson("Admin/Arcs/Stats").then(function (d) {
+        stats.textContent = "";
+        [
+            [String(d.Clips), "Clips seen"], [String(d.IndexedTitles), "Titles in the scene index"], [String(d.DialogueTitles || 0), "Titles in the dialogue index"],
+            [d.CacheMb + " MB", "Cache in use"],
+            [String(d.Likes), "Likes"], [String(d.Shares), "Shares"], [String(d.WatchFromHere), "Watched on from a clip"]
+        ].forEach(function (pair) {
+            stats.appendChild(el("div", { className: "afStat" }, [el("div", { className: "afStatValue", text: pair[0] }), el("div", { className: "afStatLabel", text: pair[1] })]));
+        });
+        top.textContent = "";
+        [["Most Liked", d.TopLiked], ["Most Watched On", d.TopWatchFromHere]].forEach(function (group) {
+            if (!group[1] || !group[1].length) { return; }
+            top.appendChild(el("h4", { className: "afSubTitle", text: group[0] }));
+            group[1].forEach(function (c) {
+                var start = Math.floor(c.StartTicks / 10000000);
+                var at = Math.floor(start / 60) + ":" + String(start % 60).padStart(2, "0");
+                var name = c.SeriesName ? c.SeriesName + " S" + c.SeasonNumber + "E" + c.EpisodeNumber + " · " + c.Name : c.Name;
+                top.appendChild(el("div", { className: "afRowMeta" }, [name + " at " + at + (c.LikeCount ? " · " + c.LikeCount + " likes" : "")]));
+            });
+        });
+    }, function () { stats.textContent = ""; top.textContent = "Couldn't load the totals."; });
+}
+
 // ----- Page -----
 
 function renderAll(view) {
@@ -1816,6 +1990,7 @@ function renderAll(view) {
     renderLive(view);
     renderHistorySettings(view);
     loadHistory(view);
+    renderArcs(view);
 }
 
 function selectTab(view, name) {
@@ -1833,8 +2008,10 @@ function reload(view, keepTab) {
     return Promise.all([
         getJson("Schema"), getJson("Admin/Policy"), getJson("Admin/Users"), getJson("Status"), getJson("Admin/PickTogether"),
         getJson("Admin/WatchParty"), getJson("Admin/Recommendations"), getJson("Admin/Integrations"), getJson("Admin/Security"), getJson("Admin/Limits"),
-        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden"), getJson("Admin/Notifications")
+        getJson("Admin/Live"), getJson("Admin/History/Settings"), getJson("Admin/Household"), getJson("Admin/Hidden"), getJson("Admin/Notifications"),
+        getJson("Admin/Arcs")
     ]).then(function (results) {
+        STATE.arcs = results[15];
         STATE.notifications = results[14];
         STATE.household = results[12];
         STATE.hidden = results[13];
@@ -1857,6 +2034,7 @@ function reload(view, keepTab) {
         renderAll(view);
         markDirty();
         if (keepTab) { selectTab(view, keepTab); }
+        loadArcsStats(view);
         Dashboard.hideLoadingMsg();
     }, showError);
 }
@@ -1937,6 +2115,27 @@ function wire(view) {
     view.querySelector("#afHistoryClear").addEventListener("click", function () {
         if (!window.confirm("Clear all watch party and Pick Together history? This can't be undone.")) { return; }
         ApiClient.ajax({ type: "DELETE", url: api("Admin/History") }).then(function () { loadHistory(view); }, showError);
+    });
+    view.querySelector("#afArcsSave").addEventListener("click", function () { saveArcs(view); });
+    view.querySelector("#afArcsRefresh").addEventListener("click", function () { loadArcsStats(view); });
+    view.querySelector("#afArcsIndex").addEventListener("click", function () {
+        ApiClient.ajax({ type: "POST", url: api("Admin/Arcs/Index") }).then(function () {
+            Dashboard.alert({ title: "Arcfin Sync", message: "The scene index is being rebuilt. Progress shows under Scheduled Tasks." });
+        }, showError);
+    });
+    view.querySelector("#afArcsDialogueIndex").addEventListener("click", function () {
+        ApiClient.ajax({ type: "POST", url: api("Admin/Arcs/DialogueIndex") }).then(function () {
+            Dashboard.alert({ title: "Arcfin Sync", message: "The dialogue index is being updated. Progress shows under Scheduled Tasks." });
+        }, showError);
+    });
+    view.querySelector("#afArcsClear").addEventListener("click", function () {
+        if (!window.confirm("Delete every rendered clip? They're made again when someone watches them.")) { return; }
+        ApiClient.ajax({ type: "DELETE", url: api("Admin/Arcs/Cache") }).then(function () { loadArcsStats(view); }, showError);
+    });
+    var banTimer = null;
+    view.querySelector("#afArcsBanSearch").addEventListener("input", function () {
+        clearTimeout(banTimer);
+        banTimer = setTimeout(function () { searchArcsBan(view); }, 300);
     });
     view.querySelector("#afRevert").addEventListener("click", function () {
         STATE.policy = clone(STATE.saved);

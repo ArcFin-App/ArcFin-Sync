@@ -101,7 +101,8 @@ public sealed class ServerEvent
     /// <summary>
     /// seerr-approved, seerr-declined, seerr-available, seerr-pending, seerr-auto-approved,
     /// seerr-failed, issue-reported, issue-comment, issue-resolved, issue-reopened, announcement,
-    /// maintenance or test.
+    /// maintenance, test, or arcs-sent (someone sent this person an Arcs scene: Title is who,
+    /// Body the title line and any note, ClipId the scene).
     /// </summary>
     public string Kind { get; set; } = string.Empty;
 
@@ -125,6 +126,9 @@ public sealed class ServerEvent
 
     /// <summary>Seerr's display name for whoever reported, commented, resolved or reopened.</summary>
     public string? Actor { get; set; }
+
+    /// <summary>For arcs-sent: the scene's clip id.</summary>
+    public string? ClipId { get; set; }
 
     public DateTime? Starts { get; set; }
 
