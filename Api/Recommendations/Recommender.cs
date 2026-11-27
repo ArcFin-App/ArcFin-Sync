@@ -37,48 +37,58 @@ public static class Recommender
     private static readonly TimeSpan HalfLife = TimeSpan.FromDays(120);
 
     /// <summary>How much each feature counts for this person; disliked titles push theirs down.</summary>
-    public static Dictionary<string, double> Profile(IEnumerable<Signal> signals, DateTime now)
+    public static Dictionary<string, double> Profile(IEnumerable<Signal> signals, DateTime now) => Profile(signals, now, 1, 1, 1);
+
+    /// <summary>The same, with history, likes and favourites each scaled by an admin's weight.</summary>
+    public static Dictionary<string, double> Profile(IEnumerable<Signal> signals, DateTime now, double history, double likes, double favorites)
     {
         var profile = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         foreach (var signal in signals)
         {
-            var weight = SignalWeight(signal, now);
-            if (weight == 0)
-            {
-                continue;
-            }
-
-            foreach (var (feature, featureWeight) in Features(signal.Title))
-            {
-                profile[feature] = profile.GetValueOrDefault(feature) + weight * featureWeight;
-            }
+            AddToProfile(profile, signal.Title, SignalWeight(signal, now, history, likes, favorites));
         }
 
         return profile;
     }
 
-    public static double SignalWeight(Signal signal, DateTime now)
+    /// <summary>Adds one title's features to a profile, e.g. for something done with it outside Jellyfin's own history.</summary>
+    public static void AddToProfile(Dictionary<string, double> profile, TitleFeatures title, double weight)
+    {
+        if (weight == 0)
+        {
+            return;
+        }
+
+        foreach (var (feature, featureWeight) in Features(title))
+        {
+            profile[feature] = profile.GetValueOrDefault(feature) + weight * featureWeight;
+        }
+    }
+
+    public static double SignalWeight(Signal signal, DateTime now) => SignalWeight(signal, now, 1, 1, 1);
+
+    public static double SignalWeight(Signal signal, DateTime now, double history, double likes, double favorites)
     {
         if (signal.Likes == false)
         {
-            return -3;
+            return -3 * likes;
         }
 
         var weight = 0.0;
         if (signal.Watched)
         {
             var age = signal.LastPlayed is { } played ? Math.Max(0, (now - played).TotalDays) : 365;
-            weight += Math.Pow(0.5, age / HalfLife.TotalDays) + 0.25;
+            weight += (Math.Pow(0.5, age / HalfLife.TotalDays) + 0.25) * history;
         }
 
         if (signal.Likes == true)
         {
-            weight += 2.5;
+            weight += 2.5 * likes;
         }
 
         if (signal.Favorite)
         {
-            weight += 2;
+            weight += 2 * favorites;
         }
 
         return weight;
@@ -137,7 +147,15 @@ public static class Recommender
         return picked;
     }
 
-    private static double RatingNudge(TitleFeatures title) => title.Rating is { } r ? (r - 6.5) * 0.12 : 0;
+    /// <summary>The lead genres a profile leans on most, strongest first.</summary>
+    public static List<string> TopGenres(Dictionary<string, double> profile, int count)
+    {
+        return profile.Where(p => p.Key.StartsWith("g:", StringComparison.Ordinal) && p.Value > 0)
+            .OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal)
+            .Take(count).Select(p => p.Key[2..]).ToList();
+    }
+
+    public static double RatingNudge(TitleFeatures title) => title.Rating is { } r ? (r - 6.5) * 0.12 : 0;
 
     private static IEnumerable<(string Feature, double Weight)> Features(TitleFeatures title)
     {

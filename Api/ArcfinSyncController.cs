@@ -107,7 +107,7 @@ public class ArcfinSyncController : ControllerBase
             Installed = true,
             Version = Plugin.Instance!.Version.ToString(),
             ApiVersion = 2,
-            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether", "hidden", "integrations", "signedCommands", "limits", "watchParty", "recommendations", "downloadLimits", "sharedAccounts", "announcements", "maintenance", "trustedDevices", "wipe", "pinRules", "requireHttps", "notifications" },
+            Features = new List<string> { "schema", "devices", "policy", "syncMeta", "pickTogether", "hidden", "integrations", "signedCommands", "limits", "watchParty", "recommendations", "downloadLimits", "sharedAccounts", "announcements", "maintenance", "trustedDevices", "wipe", "pinRules", "requireHttps", "notifications", "arcs" },
             Enabled = EnabledFeatures(Plugin.Instance.Configuration)
         };
     }
@@ -125,6 +125,7 @@ public class ArcfinSyncController : ControllerBase
         }
 
         Add(config.PickTogether.Enabled, "pickTogether");
+        Add(config.Arcs.Enabled, "arcs");
         Add(config.WatchParty.Enabled, "watchParty");
         Add(config.RecommendationsEnabled, "recommendations");
         Add(config.HiddenEnabled, "hidden");

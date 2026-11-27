@@ -19,6 +19,7 @@
                 <button type="button" class="afTab" role="tab" data-tab="limits" aria-selected="false">Watch Time</button>
                 <button type="button" class="afTab" role="tab" data-tab="household" aria-selected="false">Household</button>
                 <button type="button" class="afTab" role="tab" data-tab="downloads" aria-selected="false">Downloads</button>
+                <button type="button" class="afTab" role="tab" data-tab="arcs" aria-selected="false">Arcs</button>
             </div>
 
             <section class="afPanel" data-panel="overview" role="tabpanel">
@@ -35,6 +36,7 @@
                         <li>On <b>Watch Time</b>, give anyone daily minutes and a bedtime. The server counts time from every app and stops playback when it's up.</li>
                         <li>On <b>Household</b>, set up shared accounts, and show announcements or planned maintenance in Arcfin.</li>
                         <li>On <b>Downloads</b>, cap how many movies, episodes and songs each person can keep downloaded across their devices.</li>
+                        <li>On <b>Arcs</b>, turn on a feed of short scenes from each person's own films and shows on iPhone and iPad, picked for them, and choose what it may show.</li>
                         <li>Everything is off until you turn it on.</li>
                         <li>Changes reach each device the next time Arcfin syncs: when it opens, comes to the front, or a setting changes.</li>
                     </ul>
@@ -388,6 +390,110 @@
                 </div>
                 <div class="afButtons">
                     <button is="emby-button" type="button" class="raised button-submit emby-button" id="afDlSave"><span>Save</span></button>
+                </div>
+            </section>
+
+            <section class="afPanel" data-panel="arcs" role="tabpanel" hidden>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Arcs</h3>
+                    <p class="fieldDescription">A vertical feed of short scenes from each person's own films and episodes in Arcfin on iPhone and iPad, picked from what they watch, like and favourite. Clips are cut on this server with Jellyfin's ffmpeg, and only from titles that person is allowed to see.</p>
+                    <label class="afInline"><input type="checkbox" id="afArcsEnabled" /> <span>Arcs is on</span></label>
+                    <h3 class="afCardTitle" style="margin-top:1em">Turn it off for</h3>
+                    <div id="afArcsUsers"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Clips</h3>
+                    <p class="fieldDescription">Clips start at chapters, two seconds in, and skip intros, recaps, credits and previews when Jellyfin has media segments for them. Titles without chapters use the scene index below, or points spread through the title until it's built.</p>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Shortest clip (seconds)</span><input type="number" class="afControl" id="afArcsMin" min="5" max="180" step="1" inputmode="numeric" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Longest clip (seconds)</span><input type="number" class="afControl" id="afArcsMax" min="5" max="180" step="1" inputmode="numeric" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Usual length (seconds)</span><input type="number" class="afControl" id="afArcsDefault" min="5" max="180" step="1" inputmode="numeric" /></label>
+                    </div>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Spoilers</span>
+                            <select is="emby-select" class="afControl" id="afArcsSpoilers">
+                                <option value="UserChoice">Each person chooses</option>
+                                <option value="AlwaysSafe">Always spoiler-safe</option>
+                            </select>
+                        </label>
+                        <label class="afLimitField"><span class="afRowMeta">Sharing clips</span>
+                            <select is="emby-select" class="afControl" id="afArcsSharing">
+                                <option value="Allowed">Allowed</option>
+                                <option value="Off">Off</option>
+                            </select>
+                        </label>
+                        <label class="afLimitField"><span class="afRowMeta">Watermark on shared clips</span>
+                            <select is="emby-select" class="afControl" id="afArcsWatermark">
+                                <option value="Optional">Each person chooses</option>
+                                <option value="Forced">Always</option>
+                                <option value="Off">Never</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p class="fieldDescription">Spoiler-safe: episodes only up to the furthest one a person has watched (the first three of a show they haven't started), and nothing from the last quarter of a film they haven't seen.</p>
+                    <label class="afInline"><input type="checkbox" id="afArcsDaily" /> <span>Show a clip of the day on Home</span></label>
+                    <label class="afInline"><input type="checkbox" id="afArcsScenes" /> <span>Find scenes in titles without chapters (the "Arcs scene index" scheduled task)</span></label>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Titles scanned at once</span><input type="number" class="afControl" id="afArcsSceneScans" min="1" max="8" step="1" inputmode="numeric" /></label>
+                    </div>
+                    <p class="fieldDescription">Uses the GPU when Jellyfin uses NVIDIA (NVENC) for transcoding, the CPU otherwise. Each extra scan at once uses more of it while the index runs, which can slow playback and transcoding for people watching. Start with 1 or 2; raise it only on a strong GPU.</p>
+                    <h3 class="afCardTitle" style="margin-top:1em">Libraries</h3>
+                    <p class="fieldDescription">Tick none to use every film and show library.</p>
+                    <div id="afArcsLibraries"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Requests, Sending and Search</h3>
+                    <label class="afInline"><input type="checkbox" id="afArcsRequests" /> <span>Mix in trailers of titles not on this server, to request through Seerr</span></label>
+                    <label class="afInline"><input type="checkbox" id="afArcsYouTube" /> <span>Play their YouTube trailers</span></label>
+                    <p class="fieldDescription">About one clip in eight, related to what each person liked or watched most. Only when Seerr is set up on the Seerr &amp; TMDB tab and the person may request there; never titles already here or already requested, and nothing for adults. With a TMDB key, trailers come in the person's language when there is one. With YouTube trailers off, they show the title's poster instead, whatever people choose in Arcfin.</p>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Sending scenes to each other</span>
+                            <select is="emby-select" class="afControl" id="afArcsSending">
+                                <option value="Everyone">Everyone</option>
+                                <option value="Off">Off</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p class="fieldDescription">People can send a scene, with a short note, to their Arcs friends who can see that title. They become friends by entering each other's friend code in Arcfin, so nobody sees who else is on the server. Sent scenes come first in their feed, and they're told when notifications are on. Up to 30 a day each.</p>
+                    <label class="afInline"><input type="checkbox" id="afArcsDialogue" /> <span>Search scenes by a line of dialogue (the "Arcs dialogue index" scheduled task)</span></label>
+                    <p class="fieldDescription">The task reads text subtitles, in files beside each title and inside it, in the languages people here chose for subtitles. Only new and changed titles are read again.</p>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Titles Never Used</h3>
+                    <p class="fieldDescription">Films and shows Arcs never takes clips from, for anyone.</p>
+                    <div id="afArcsBanned"></div>
+                    <div class="afOverrideAdd">
+                        <input type="search" class="afSearch" id="afArcsBanSearch" placeholder="Find a film or show" aria-label="Find a film or show" />
+                    </div>
+                    <div id="afArcsBanResults"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Recommendations</h3>
+                    <p class="fieldDescription">How much each signal counts when picking clips; 1 is the usual weight and 0 ignores it. Exploration is the share of clips from outside a person's usual taste (0.15 is about one in six). What other people liked only counts where at least two of them did.</p>
+                    <div class="afLimitGrid" id="afArcsWeights"></div>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Cache</h3>
+                    <p class="fieldDescription">Rendered clips are kept on this server and the least recently watched are removed to stay under the size. The first clips of each feed page are made ahead so the first swipes don't wait.</p>
+                    <div class="afLimitGrid">
+                        <label class="afLimitField"><span class="afRowMeta">Cache size (MB)</span><input type="number" class="afControl" id="afArcsCache" min="100" step="100" inputmode="numeric" /></label>
+                        <label class="afLimitField"><span class="afRowMeta">Clips made ahead per page</span><input type="number" class="afControl" id="afArcsPrewarm" min="0" max="10" step="1" inputmode="numeric" /></label>
+                    </div>
+                </div>
+                <div class="afButtons">
+                    <button is="emby-button" type="button" class="raised button-submit emby-button" id="afArcsSave"><span>Save</span></button>
+                </div>
+                <div class="afCard">
+                    <h3 class="afCardTitle">Activity</h3>
+                    <p class="fieldDescription">Totals for everyone; nothing here shows what one person did. Top clips only list clips at least two people responded to.</p>
+                    <div class="afStats" id="afArcsStats"></div>
+                    <div id="afArcsTop"></div>
+                    <div class="afButtons">
+                        <button is="emby-button" type="button" class="raised emby-button" id="afArcsRefresh"><span>Refresh</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button" id="afArcsIndex"><span>Rebuild Scene Index</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button" id="afArcsDialogueIndex"><span>Rebuild Dialogue Index</span></button>
+                        <button is="emby-button" type="button" class="raised emby-button afDanger" id="afArcsClear"><span>Clear Cache</span></button>
+                    </div>
                 </div>
             </section>
 

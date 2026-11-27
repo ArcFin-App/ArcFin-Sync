@@ -17,5 +17,6 @@ public class ServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Household.SharedWatchService>();
         serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Notifications.SeerrWatchService>();
         serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Notifications.LiveNudgeService>();
+        serviceCollection.AddHostedService<Jellyfin.Plugin.ArcfinSync.Api.Arcs.ArcsGpuWarmup>();
     }
 }

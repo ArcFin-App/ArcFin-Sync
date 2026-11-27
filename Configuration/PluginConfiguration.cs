@@ -60,6 +60,88 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Seerr request changes, announcements and maintenance for Arcfin to notify about. Off until an admin turns it on.</summary>
     public NotificationSettings Notifications { get; set; } = new();
+
+    /// <summary>Short scenes from the library in a vertical feed. Off until an admin turns it on.</summary>
+    public ArcsSettings Arcs { get; set; } = new();
+}
+
+public class ArcsSettings
+{
+    public bool Enabled { get; set; }
+
+    public List<Guid> DisabledUsers { get; set; } = new();
+
+    /// <summary>Libraries clips come from; empty for every film and show library.</summary>
+    public List<Guid> Libraries { get; set; } = new();
+
+    public int MinSeconds { get; set; } = 15;
+
+    public int MaxSeconds { get; set; } = 60;
+
+    public int DefaultSeconds { get; set; } = 30;
+
+    /// <summary>UserChoice or AlwaysSafe.</summary>
+    public string Spoilers { get; set; } = "UserChoice";
+
+    /// <summary>Allowed or Off.</summary>
+    public string Sharing { get; set; } = "Allowed";
+
+    /// <summary>Optional, Forced or Off.</summary>
+    public string Watermark { get; set; } = "Optional";
+
+    public bool ClipOfTheDay { get; set; } = true;
+
+    /// <summary>Titles never used, films or shows.</summary>
+    public List<Guid> BannedItems { get; set; } = new();
+
+    public int CacheMb { get; set; } = 2048;
+
+    /// <summary>Clips of each feed page rendered ahead in the background.</summary>
+    public int Prewarm { get; set; } = 3;
+
+    /// <summary>Titles without chapters get clip starts from a scheduled scene-change scan.</summary>
+    public bool UseSceneDetection { get; set; } = true;
+
+    /// <summary>Scene scans run side by side (1 to 8). Each one uses more of the GPU, or the CPU without one.</summary>
+    public int SceneScans { get; set; } = 1;
+
+    /// <summary>Trailers of titles not on the server, to request through Seerr, mixed into the feed.</summary>
+    public bool RequestsInFeed { get; set; } = true;
+
+    /// <summary>Request clips play the title's YouTube trailer. Off, they show its poster only, whatever people choose.</summary>
+    public bool YouTubeTrailers { get; set; } = true;
+
+    /// <summary>Everyone or Off: whether people may send scenes to each other.</summary>
+    public string Sending { get; set; } = "Everyone";
+
+    /// <summary>Search by a line of dialogue, from the "Arcs dialogue index" scheduled task.</summary>
+    public bool DialogueSearch { get; set; } = true;
+
+    public ArcsWeights Weights { get; set; } = new();
+}
+
+public class ArcsWeights
+{
+    public double History { get; set; } = 1.0;
+
+    public double Likes { get; set; } = 1.0;
+
+    public double WatchTime { get; set; } = 1.0;
+
+    public double WatchFromHere { get; set; } = 1.0;
+
+    public double Shares { get; set; } = 1.0;
+
+    public double Favorites { get; set; } = 1.0;
+
+    public double Similar { get; set; } = 1.0;
+
+    public double Popular { get; set; } = 1.0;
+
+    /// <summary>Share of feed slots given to titles outside the person's usual taste.</summary>
+    public double Exploration { get; set; } = 0.15;
+
+    public double Fresh { get; set; } = 1.0;
 }
 
 public class NotificationSettings

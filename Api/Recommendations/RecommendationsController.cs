@@ -28,16 +28,17 @@ public class RecommendationsController : ControllerBase
     private const int PoolLimit = 2000;
     private const int RowSize = 20;
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
-    private static readonly string[] PersonTypes = { "Actor", "Director" };
     private static readonly ConcurrentDictionary<Guid, (DateTime At, RecommendationsDto Rows)> Cache = new();
 
     private readonly IAuthorizationContext _authContext;
     private readonly IUserManager _userManager;
     private readonly ILibraryManager _libraryManager;
     private readonly IUserDataManager _userData;
+    private readonly LibraryTitles _titles;
 
     public RecommendationsController(IAuthorizationContext authContext, IUserManager userManager, ILibraryManager libraryManager, IUserDataManager userData)
     {
+        _titles = new LibraryTitles(userManager, libraryManager, userData);
         _authContext = authContext;
         _userManager = userManager;
         _libraryManager = libraryManager;
@@ -75,10 +76,10 @@ public class RecommendationsController : ControllerBase
 
     private RecommendationsDto Build(User user, DateTime now)
     {
-        var signals = Signals(user);
+        var signals = _titles.Signals(user);
         var seen = signals.Where(s => s.Watched).Select(s => s.Title.Id).ToHashSet();
         var disliked = signals.Where(s => s.Likes == false).Select(s => s.Title.Id).ToHashSet();
-        var candidates = Features(Unwatched(user).Where(i => !seen.Contains(i.Id) && !disliked.Contains(i.Id)).ToList());
+        var candidates = _titles.Features(_titles.Unwatched(user, PoolLimit).Where(i => !seen.Contains(i.Id) && !disliked.Contains(i.Id)).ToList());
         var profile = Recommender.Profile(signals, now);
 
         var result = new RecommendationsDto();
@@ -121,130 +122,10 @@ public class RecommendationsController : ControllerBase
         return result;
     }
 
-    /// <summary>Movies and shows the user watched (a show counts once any episode was played), liked or made a favourite.</summary>
-    private List<Signal> Signals(User user)
-    {
-        var watchedMovies = _libraryManager.GetItemList(new InternalItemsQuery(user)
-        {
-            IncludeItemTypes = new[] { BaseItemKind.Movie },
-            Recursive = true,
-            IsPlayed = true,
-            OrderBy = new[] { (ItemSortBy.DatePlayed, SortOrder.Descending) },
-            Limit = 150
-        });
-        var episodes = _libraryManager.GetItemList(new InternalItemsQuery(user)
-        {
-            IncludeItemTypes = new[] { BaseItemKind.Episode },
-            Recursive = true,
-            IsPlayed = true,
-            OrderBy = new[] { (ItemSortBy.DatePlayed, SortOrder.Descending) },
-            Limit = 600
-        });
-        var showsPlayed = new Dictionary<Guid, DateTime?>();
-        foreach (var episode in episodes.OfType<MediaBrowser.Controller.Entities.TV.Episode>())
-        {
-            var played = _userData.GetUserData(user, episode)?.LastPlayedDate;
-            if (episode.SeriesId != Guid.Empty && (!showsPlayed.TryGetValue(episode.SeriesId, out var last) || played > last))
-            {
-                showsPlayed[episode.SeriesId] = played;
-            }
-        }
-
-        var favourites = _libraryManager.GetItemList(new InternalItemsQuery(user)
-        {
-            IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
-            Recursive = true,
-            IsFavorite = true,
-            Limit = 150
-        });
-
-        var titles = watchedMovies.Concat(favourites)
-            .Concat(showsPlayed.Keys.Take(80).Select(id => _libraryManager.GetItemById(id)).Where(i => i is not null && i.IsVisible(user))!)
-            .DistinctBy(i => i!.Id).ToList();
-        var features = Features(titles!).ToDictionary(f => f.Id);
-        var signals = new List<Signal>();
-        foreach (var item in titles)
-        {
-            var data = _userData.GetUserData(user, item!);
-            var isShow = item is MediaBrowser.Controller.Entities.TV.Series;
-            var watched = isShow ? showsPlayed.ContainsKey(item!.Id) : data?.Played == true;
-            var lastPlayed = isShow ? showsPlayed.GetValueOrDefault(item!.Id) : data?.LastPlayedDate;
-            signals.Add(new Signal(features[item!.Id], watched, data?.Likes, data?.IsFavorite == true, lastPlayed));
-        }
-
-        return signals;
-    }
-
-    private List<BaseItem> Unwatched(User user)
-    {
-        var found = new List<BaseItem>();
-        foreach (var kind in new[] { BaseItemKind.Movie, BaseItemKind.Series })
-        {
-            found.AddRange(_libraryManager.GetItemList(new InternalItemsQuery(user)
-            {
-                IncludeItemTypes = new[] { kind },
-                Recursive = true,
-                IsVirtualItem = false,
-                IsPlayed = false,
-                OrderBy = new[] { (ItemSortBy.CommunityRating, SortOrder.Descending) },
-                Limit = PoolLimit
-            }));
-        }
-
-        return found;
-    }
-
-    private List<TitleFeatures> Features(IReadOnlyList<BaseItem> items)
-    {
-        var people = items.Count == 0
-            ? new Dictionary<Guid, List<string>>()
-            : _libraryManager.GetPeopleNamesByItems(items.Select(i => i.Id).ToList(), PersonTypes)
-                .ToDictionary(p => p.Key, p => p.Value.Take(8).ToList());
-        return items.Select(i => new TitleFeatures(
-            i.Id,
-            i.Name ?? string.Empty,
-            i is MediaBrowser.Controller.Entities.TV.Series,
-            i.Genres ?? Array.Empty<string>(),
-            people.GetValueOrDefault(i.Id) ?? new List<string>(),
-            i.Tags ?? Array.Empty<string>(),
-            i.Studios ?? Array.Empty<string>(),
-            i.CommunityRating,
-            i.ProductionYear,
-            i.DateCreated)).ToList();
-    }
-
     /// <summary>Titles at least two other people on the server played in the last 30 days, that this user can see and hasn't watched.</summary>
     private List<string> Popular(User user, DateTime now, HashSet<Guid> seen)
     {
-        var counts = new Dictionary<Guid, int>();
-        foreach (var other in _userManager.GetUsers().Where(u => u.Id != user.Id))
-        {
-            var recent = _libraryManager.GetItemList(new InternalItemsQuery(other)
-            {
-                IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Episode },
-                Recursive = true,
-                IsPlayed = true,
-                OrderBy = new[] { (ItemSortBy.DatePlayed, SortOrder.Descending) },
-                Limit = 200
-            });
-            var titles = new HashSet<Guid>();
-            foreach (var item in recent)
-            {
-                if (_userData.GetUserData(other, item)?.LastPlayedDate is not { } played || now - played > TimeSpan.FromDays(30))
-                {
-                    continue;
-                }
-
-                titles.Add(item is MediaBrowser.Controller.Entities.TV.Episode episode ? episode.SeriesId : item.Id);
-            }
-
-            foreach (var id in titles.Where(id => id != Guid.Empty))
-            {
-                counts[id] = counts.GetValueOrDefault(id) + 1;
-            }
-        }
-
-        return counts.Where(c => c.Value >= 2 && !seen.Contains(c.Key))
+        return _titles.PlayedByOthers(user, now).Where(c => c.Value >= 2 && !seen.Contains(c.Key))
             .OrderByDescending(c => c.Value)
             .Select(c => _libraryManager.GetItemById(c.Key))
             .Where(i => i is not null && i.IsVisible(user) && _userData.GetUserData(user, i)?.Played != true)

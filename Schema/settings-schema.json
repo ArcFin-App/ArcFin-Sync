@@ -22,6 +22,10 @@
       "title": "Music"
     },
     {
+      "id": "arcs",
+      "title": "Arcs"
+    },
+    {
       "id": "downloads",
       "title": "Downloads"
     },
@@ -2065,6 +2069,18 @@
       ]
     },
     {
+      "key": "notifyArcsSent",
+      "type": "bool",
+      "scope": "synced",
+      "group": "notifications",
+      "title": "Scenes from Friends",
+      "detail": "When a friend sends you a scene in Arcs.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
       "key": "notifyRequestsToApprove",
       "type": "bool",
       "scope": "synced",
@@ -2715,6 +2731,205 @@
         "iOS",
         "macOS",
         "tvOS"
+      ]
+    },
+    {
+      "key": "arcsClipSeconds",
+      "type": "int",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Scene Length",
+      "detail": "How long each scene runs.",
+      "default": "30",
+      "options": [
+        {
+          "value": "15",
+          "title": "15 seconds"
+        },
+        {
+          "value": "30",
+          "title": "30 seconds"
+        },
+        {
+          "value": "45",
+          "title": "45 seconds"
+        },
+        {
+          "value": "60",
+          "title": "60 seconds"
+        }
+      ],
+      "min": 15,
+      "max": 60,
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsSpoilerSafe",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Hide Spoilers",
+      "detail": "Only scenes from episodes you've reached, and nothing from the end of a film you haven't seen.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsShowReasons",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Say Why",
+      "detail": "A line under each scene's title saying why it's there.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsWhenClipEnds",
+      "type": "string",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "When a Scene Ends",
+      "default": "loop",
+      "options": [
+        {
+          "value": "loop",
+          "title": "Play It Again"
+        },
+        {
+          "value": "next",
+          "title": "Go to the Next One"
+        }
+      ],
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsPreload",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Preload Arcs",
+      "detail": "When Arcfin opens, your server starts getting your first scenes ready.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsShowRequests",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Titles to Request",
+      "detail": "Now and then, the trailer of a title that isn't on your server yet, with a button to request it.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsYouTubeTrailers",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "YouTube Trailers",
+      "detail": "Titles to request play their trailer from YouTube. Off, they show the poster instead.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsFraming",
+      "type": "string",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Framing",
+      "detail": "How a widescreen scene fills an upright screen.",
+      "default": "fill",
+      "options": [
+        {
+          "value": "fill",
+          "title": "Fill the Screen"
+        },
+        {
+          "value": "blur",
+          "title": "Whole Picture, Blurred Behind"
+        },
+        {
+          "value": "fit",
+          "title": "Whole Picture"
+        }
+      ],
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsSubtitles",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Subtitles",
+      "default": "false",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsDataSaver",
+      "type": "string",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Data Saver",
+      "detail": "Scenes come in at a lower quality, using less data.",
+      "default": "mobile",
+      "options": [
+        {
+          "value": "mobile",
+          "title": "On Mobile Data"
+        },
+        {
+          "value": "always",
+          "title": "Always"
+        },
+        {
+          "value": "off",
+          "title": "Off"
+        }
+      ],
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsWatermark",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Arcfin Watermark",
+      "detail": "A small Arcfin logo at the bottom of scenes you share.",
+      "default": "true",
+      "platforms": [
+        "iOS"
+      ]
+    },
+    {
+      "key": "arcsClipOfTheDay",
+      "type": "bool",
+      "scope": "synced",
+      "group": "arcs",
+      "title": "Scene of the Day on Home",
+      "default": "true",
+      "platforms": [
+        "iOS"
       ]
     },
     {
