@@ -2,12 +2,20 @@
   {
     "guid": "f3a1c9d2-6b4e-4a7f-9c3d-1e2f3a4b5c6d",
     "name": "Arcfin Sync",
-    "description": "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions and watch parties, Seerr and TMDB through the server, signed security commands, watch-time limits, household features and notifications (each off until an administrator turns it on), extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use.",
+    "description": "Keeps each user's Arcfin settings in step across their devices and keeps a record of those devices. Administrators set defaults and locks per setting, for everyone or for one user, from the Jellyfin dashboard. Also runs Pick Together sessions and watch parties, Seerr and TMDB through the server, signed security commands, watch-time limits, household features, notifications and Arcs (each off until an administrator turns it on), extracts single audio tracks for Arcfin downloads and reports which video encoders the server's hardware can use.",
     "overview": "Syncs Arcfin app settings across a user's devices, with admin defaults and locks.",
     "owner": "psmattas",
     "category": "General",
     "imageUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/media/branch/main/icon.png",
     "versions": [
+      {
+        "version": "0.8.0.0",
+        "changelog": "Arcs: short scenes from the server's films and episodes, picked for each person and played in a vertical feed in Arcfin on iPhone and iPad. Clips start at chapters, at cold opens, or at scene changes the Arcs scene index finds, skipping intros and credits, and are spoiler-safe by default. Recommendations learn from watch history, likes, watch time and favourites. Dialogue search, moods and reactions, best scenes for a title, friend codes for sending scenes to each other, request trailers through Seerr (which people or the administrator can turn off), personal stats and a clip of the day. Clips stream as HLS, made with Jellyfin's ffmpeg on the NVIDIA GPU (with HDR tone mapping) when Jellyfin uses NVENC, and on the CPU otherwise. The scene index decodes keyframes only, on the GPU too, with a setting for how many titles it scans at once. Off until an administrator turns it on, on the new Arcs tab.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://git.psmattas.com/ArcFin/Arcfin-Sync/releases/download/v0.8.0/arcfin-sync-0.8.0.0.zip",
+        "checksum": "ce323ba87a1ad07e72f3c7d17afa65df",
+        "timestamp": "2026-11-27T23:07:34Z"
+      },
       {
         "version": "0.7.1.0",
         "changelog": "Settings catalogue: Arcfin's music visualizer settings, Visualizer Style (Bars, Wave, Mirrored or Dots), Visualizer Placement (On the Cover or Bottom of the Player) and Visualizer Colour (From the Cover, Cover Colours, Spectrum or White Glass), which administrators can set defaults for and lock. They replace Colour from Cover.",
