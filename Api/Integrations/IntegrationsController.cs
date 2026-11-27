@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.ArcfinSync.Api.Security;
 using MediaBrowser.Controller.Library;
@@ -97,7 +98,24 @@ public class IntegrationsController : ControllerBase
 
         try
         {
+            if (HttpMethods.IsGet(method) && SeerrAnswers.Keeps(path))
+            {
+                // Not tied to this call's cancellation: others asking the same may share the answer.
+                var answer = await SeerrAnswers.GetAsync($"{seerrUser}|{path}{Request.QueryString.Value}", async () =>
+                {
+                    using var shared = await client.SendAsync(HttpMethod.Get, path, Request.QueryString.Value, null, seerrUser, CancellationToken.None).ConfigureAwait(false);
+                    return new SeerrAnswer((int)shared.StatusCode, shared.Content.Headers.ContentType?.ToString(),
+                                           await shared.Content.ReadAsByteArrayAsync(CancellationToken.None).ConfigureAwait(false));
+                }).WaitAsync(HttpContext.RequestAborted).ConfigureAwait(false);
+                return Passthrough(answer.Body, answer.ContentType, answer.Status);
+            }
+
             using var response = await client.SendAsync(new HttpMethod(method), path, Request.QueryString.Value, body, seerrUser, HttpContext.RequestAborted).ConfigureAwait(false);
+            if (!HttpMethods.IsGet(method) && response.IsSuccessStatusCode)
+            {
+                SeerrAnswers.Clear();
+            }
+
             if ((int)response.StatusCode >= 500 && Queue(user.Id, method, path, body) is { } queued)
             {
                 return queued;
@@ -117,6 +135,126 @@ public class IntegrationsController : ControllerBase
             return Queue(user.Id, method, path, body) ?? StatusCode(502, new { message = "The server can't reach Seerr right now." });
         }
     }
+
+    /// <summary>
+    /// One page of Seerr's requests, as the person sees them in Seerr, with each title's name and
+    /// artwork filled in ("arcfin" on each row), so a client needs one call per page instead of one
+    /// per request. The first page also starts filling in the rest, so later pages are ready.
+    /// </summary>
+    [HttpGet("Seerr/Requests")]
+    public Task<ActionResult> SeerrRequests([FromQuery] string? filter, [FromQuery] string? sort, [FromQuery] int take = 20, [FromQuery] int skip = 0)
+    {
+        take = Math.Clamp(take, 1, SeerrTitles.MaxTake);
+        skip = Math.Max(0, skip);
+        var query = $"?take={take}&skip={skip}&filter={Uri.EscapeDataString(filter ?? "all")}&sort={Uri.EscapeDataString(sort ?? "added")}";
+        return FilledPage("request", query, skip == 0 ? (client, seerrUser, total) => WarmRequests(client, seerrUser, filter, sort, take, total) : null);
+    }
+
+    /// <summary>One page of the person's Seerr watchlist (20 a page, as Seerr serves it), with titles and artwork filled in.</summary>
+    [HttpGet("Seerr/Watchlist")]
+    public Task<ActionResult> SeerrWatchlist([FromQuery] int page = 1)
+        => FilledPage("discover/watchlist", $"?page={Math.Clamp(page, 1, 500)}", null);
+
+    /// <summary>Age ratings for up to 100 titles ("movie:603,tv:1399") in a country, as { "movie:603": "15" }; empty where TMDB has none.</summary>
+    [HttpGet("Seerr/Ratings")]
+    public async Task<ActionResult> SeerrRatings([FromQuery] string? titles, [FromQuery] string? region)
+    {
+        var (user, client, problem) = await SeerrCaller().ConfigureAwait(false);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var wanted = (titles ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(t => t.Split(':')).Where(p => p.Length == 2 && p[0] is "movie" or "tv" && int.TryParse(p[1], out _))
+            .Select(p => (p[0], int.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture))).Distinct().Take(SeerrTitles.MaxTake).ToList();
+        var country = (region ?? "US").Trim().ToUpperInvariant();
+        var cards = await SeerrTitles.CardsAsync(client!, wanted, HttpContext.RequestAborted).ConfigureAwait(false);
+        return Ok(wanted.ToDictionary(t => SeerrTitles.Key(t.Item1, t.Item2), t => cards.TryGetValue(SeerrTitles.Key(t.Item1, t.Item2), out var c) ? c.Rating(country) : (string?)null));
+    }
+
+    private async Task<(Jellyfin.Database.Implementations.Entities.User? User, SeerrClient? Client, ActionResult? Problem)> SeerrCaller()
+    {
+        var auth = await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false);
+        var user = auth.IsAuthenticated ? _userManager.GetUserById(auth.UserId) : null;
+        if (user is null)
+        {
+            return (null, null, Unauthorized());
+        }
+
+        return SeerrClient.IsConfigured ? (user, new SeerrClient(_http), null) : (user, null, NotFound(new { message = "Seerr isn't set up on this server." }));
+    }
+
+    private async Task<ActionResult> FilledPage(string path, string query, Action<SeerrClient, int, int>? afterwards)
+    {
+        var (user, client, problem) = await SeerrCaller().ConfigureAwait(false);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        try
+        {
+            var seerrUser = await client!.SeerrUserAsync(user!.Id, HttpContext.RequestAborted).ConfigureAwait(false);
+            if (seerrUser is null)
+            {
+                return StatusCode(403, new { message = "You don't have a Seerr account yet. Ask your server's admin to add you." });
+            }
+
+            using var response = await client.SendAsync(HttpMethod.Get, path, query, null, seerrUser, HttpContext.RequestAborted).ConfigureAwait(false);
+            var json = await response.Content.ReadAsStringAsync(HttpContext.RequestAborted).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode || System.Text.Json.Nodes.JsonNode.Parse(json) is not { } page)
+            {
+                return Passthrough(System.Text.Encoding.UTF8.GetBytes(json), response.Content.Headers.ContentType?.ToString(), (int)response.StatusCode);
+            }
+
+            var cards = await SeerrTitles.CardsAsync(client, SeerrTitles.Titles(page).OfType<(string, int)>(), HttpContext.RequestAborted).ConfigureAwait(false);
+            SeerrTitles.Fill(page, cards);
+            afterwards?.Invoke(client, seerrUser.Value, page["pageInfo"]?["results"] is System.Text.Json.Nodes.JsonValue total && total.TryGetValue<int>(out var t) ? t : 0);
+            return Content(page.ToJsonString(), "application/json");
+        }
+        catch (SeerrUnreachableException)
+        {
+            return StatusCode(502, new { message = "The server can't reach Seerr right now." });
+        }
+    }
+
+    /// <summary>Fills in the titles of the rest of the person's requests in the background, so later pages answer at once.</summary>
+    private void WarmRequests(SeerrClient client, int seerrUser, string? filter, string? sort, int take, int total)
+    {
+        if (total <= take || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                for (var skip = take; skip < Math.Min(total, 1000); skip += SeerrTitles.MaxTake)
+                {
+                    var query = $"?take={SeerrTitles.MaxTake}&skip={skip}&filter={Uri.EscapeDataString(filter ?? "all")}&sort={Uri.EscapeDataString(sort ?? "added")}";
+                    using var response = await client.SendAsync(HttpMethod.Get, "request", query, null, seerrUser, CancellationToken.None).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode || System.Text.Json.Nodes.JsonNode.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false)) is not { } page)
+                    {
+                        return;
+                    }
+
+                    await SeerrTitles.CardsAsync(client, SeerrTitles.Titles(page).OfType<(string, int)>(), CancellationToken.None).ConfigureAwait(false);
+                }
+            }
+            catch (Exception error) when (error is HttpRequestException or SeerrUnreachableException or System.Text.Json.JsonException or InvalidOperationException or TaskCanceledException)
+            {
+                _logger.LogDebug(error, "Arcfin Sync: filling in Seerr request titles stopped");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _warming, 0);
+            }
+        });
+    }
+
+    private static int _warming;
 
     [HttpGet("Tmdb/3/{**path}")]
     public async Task<ActionResult> Tmdb([FromRoute] string path)
