@@ -108,6 +108,13 @@ public sealed class SeerrClient
         await UsersGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
+            // Calls that waited here while another reloaded the list use that list, rather than
+            // each reloading it in turn.
+            if (DateTime.UtcNow - _usersLoaded < TimeSpan.FromMinutes(10) && Users.TryGetValue(id, out var fresh))
+            {
+                return fresh;
+            }
+
             await LoadUsersAsync(token).ConfigureAwait(false);
             if (Users.TryGetValue(id, out var found))
             {
@@ -146,7 +153,10 @@ public sealed class SeerrClient
             await UsersGate.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                await LoadUsersAsync(token).ConfigureAwait(false);
+                if (DateTime.UtcNow - _usersLoaded >= TimeSpan.FromMinutes(10) || Permissions.IsEmpty)
+                {
+                    await LoadUsersAsync(token).ConfigureAwait(false);
+                }
             }
             finally
             {
