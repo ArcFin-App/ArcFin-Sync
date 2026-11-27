@@ -71,9 +71,49 @@ public static class DialogueText
         return string.Join(' ', plain.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 
+    /// <summary>
+    /// Latin letters with accents (U+00C0 to U+024F) as their base letters, from their Unicode
+    /// decompositions. Used first, so accents go even where .NET runs without ICU and can't
+    /// decompose; null where a letter has no decomposition.
+    /// </summary>
+    private static readonly string?[] LatinFold =
+    {
+        "a", "a", "a", "a", "a", "a", null, "c", "e", "e", "e", "e", "i", "i", "i", "i",
+        null, "n", "o", "o", "o", "o", "o", null, null, "u", "u", "u", "u", "y", null, null,
+        "a", "a", "a", "a", "a", "a", null, "c", "e", "e", "e", "e", "i", "i", "i", "i",
+        null, "n", "o", "o", "o", "o", "o", null, null, "u", "u", "u", "u", "y", null, "y",
+        "a", "a", "a", "a", "a", "a", "c", "c", "c", "c", "c", "c", "c", "c", "d", "d",
+        null, null, "e", "e", "e", "e", "e", "e", "e", "e", "e", "e", "g", "g", "g", "g",
+        "g", "g", "g", "g", "h", "h", null, null, "i", "i", "i", "i", "i", "i", "i", "i",
+        "i", null, null, null, "j", "j", "k", "k", null, "l", "l", "l", "l", "l", "l", null,
+        null, null, null, "n", "n", "n", "n", "n", "n", null, null, null, "o", "o", "o", "o",
+        "o", "o", null, null, "r", "r", "r", "r", "r", "r", "s", "s", "s", "s", "s", "s",
+        "s", "s", "t", "t", "t", "t", null, null, "u", "u", "u", "u", "u", "u", "u", "u",
+        "u", "u", "u", "u", "w", "w", "y", "y", "y", "z", "z", "z", "z", "z", "z", null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        "o", "o", null, null, null, null, null, null, null, null, null, null, null, null, null, "u",
+        "u", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, "a", "a", "i",
+        "i", "o", "o", "u", "u", "u", "u", "u", "u", "u", "u", "u", "u", null, "a", "a",
+        "a", "a", "æ", "æ", null, null, "g", "g", "k", "k", "o", "o", "o", "o", "ʒ", "ʒ",
+        "j", null, null, null, "g", "g", null, null, "n", "n", "a", "a", "æ", "æ", "ø", "ø",
+        "a", "a", "a", "a", "e", "e", "e", "e", "i", "i", "i", "i", "o", "o", "o", "o",
+        "r", "r", "r", "r", "u", "u", "u", "u", "s", "s", "t", "t", null, null, "h", "h",
+        null, null, null, null, null, null, "a", "a", "e", "e", "o", "o", "o", "o", "o", "o",
+        "o", "o", "y", "y", null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+    };
+
     public static string Normalize(string text)
     {
-        var decomposed = text.Normalize(NormalizationForm.FormD);
+        var folded = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            folded.Append(c is >= '\u00C0' and <= '\u024F' && LatinFold[c - '\u00C0'] is { } plain ? plain : c.ToString());
+        }
+
+        var decomposed = folded.ToString().Normalize(NormalizationForm.FormD);
         var result = new StringBuilder(decomposed.Length);
         var space = true;
         foreach (var c in decomposed)
@@ -279,6 +319,20 @@ public static class LanguageCodes
         ["mao"] = "mri", ["may"] = "msa", ["tib"] = "bod", ["wel"] = "cym",
     };
 
+    /// <summary>ISO 639-1 codes as ISO 639-2/T, so they match without ICU's locale data.</summary>
+    private static readonly Dictionary<string, string> TwoLetter = new(StringComparer.Ordinal)
+    {
+        ["af"] = "afr", ["ar"] = "ara", ["bg"] = "bul", ["bn"] = "ben", ["ca"] = "cat", ["cs"] = "ces", ["cy"] = "cym", ["da"] = "dan",
+        ["de"] = "deu", ["el"] = "ell", ["en"] = "eng", ["es"] = "spa", ["et"] = "est", ["eu"] = "eus", ["fa"] = "fas", ["fi"] = "fin",
+        ["fil"] = "fil", ["fr"] = "fra", ["ga"] = "gle", ["gl"] = "glg", ["gu"] = "guj", ["he"] = "heb", ["hi"] = "hin", ["hr"] = "hrv",
+        ["hu"] = "hun", ["hy"] = "hye", ["id"] = "ind", ["is"] = "isl", ["it"] = "ita", ["ja"] = "jpn", ["ka"] = "kat", ["kk"] = "kaz",
+        ["km"] = "khm", ["kn"] = "kan", ["ko"] = "kor", ["lt"] = "lit", ["lv"] = "lav", ["mk"] = "mkd", ["ml"] = "mal", ["mn"] = "mon",
+        ["mr"] = "mar", ["ms"] = "msa", ["mt"] = "mlt", ["my"] = "mya", ["nb"] = "nob", ["ne"] = "nep", ["nl"] = "nld", ["nn"] = "nno",
+        ["no"] = "nor", ["pa"] = "pan", ["pl"] = "pol", ["pt"] = "por", ["ro"] = "ron", ["ru"] = "rus", ["sk"] = "slk", ["sl"] = "slv",
+        ["sq"] = "sqi", ["sr"] = "srp", ["sv"] = "swe", ["sw"] = "swa", ["ta"] = "tam", ["te"] = "tel", ["th"] = "tha", ["tl"] = "tgl",
+        ["tr"] = "tur", ["uk"] = "ukr", ["ur"] = "urd", ["uz"] = "uzb", ["vi"] = "vie", ["zh"] = "zho", ["zu"] = "zul",
+    };
+
     public static string Canonical(string? code)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -293,7 +347,11 @@ public static class LanguageCodes
             value = value[..dash];
         }
 
-        if (value.Length == 2)
+        if (value.Length == 2 && TwoLetter.TryGetValue(value, out var known))
+        {
+            value = known;
+        }
+        else if (value.Length == 2)
         {
             try
             {
