@@ -102,6 +102,8 @@ public static class DialogueExtractor
                 return result;
             }
 
+            ClipRenderer.Background(process);
+
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromMinutes(10));
             var errors = process.StandardError.ReadToEndAsync(CancellationToken.None);
